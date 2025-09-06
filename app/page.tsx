@@ -6,7 +6,7 @@ import {Input} from "@/components/ui/input"
 import {Label} from "@/components/ui/label"
 import {Button} from "@/components/ui/button"
 import {useTheme} from "next-themes"
-import {Eye} from "lucide-react"
+import {Eye, ChevronDown, ChevronUp} from "lucide-react"
 import MatrixBackground from "@/components/matrix-background"
 import {PageHeader} from "@/components/page-header"
 
@@ -25,11 +25,22 @@ export default function CoinTossSimulator() {
   const [backgroundSpeed, setBackgroundSpeed] = useState(1)
   const [backgroundRefreshRate, setBackgroundRefreshRate] = useState(1)
   const [isZenMode, setIsZenMode] = useState(false)
+  const [isSettingsCollapsed, setIsSettingsCollapsed] = useState(true)
 
 
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Auto-adjust particle color based on theme
+  useEffect(() => {
+    if (!mounted) return
+    if (theme === 'dark') {
+      setParticleColor('#1DD11D') // Matrix green for dark theme
+    } else {
+      setParticleColor('#333333') // Dark grey for light theme
+    }
+  }, [theme, mounted])
 
   // Randomize all settings function
   const randomizeSettings = () => {
@@ -77,11 +88,17 @@ export default function CoinTossSimulator() {
             onRandomizeSettings={randomizeSettings}
           />
 
-          {/* Settings moved to central block */}
-          <div className="bg-background/20 backdrop-blur-sm rounded-lg p-6">
-            <h2 className="text-2xl font-bold mb-4 text-center">⚡ Visual Effects</h2>
-            <p className="text-muted-foreground text-center mb-6">Customize the Matrix background animations and particle effects.</p>
-            <div className="space-y-4">
+          {/* Collapsible Settings in top left */}
+          <div className="fixed top-4 left-4 z-10 bg-background/20 backdrop-blur-sm rounded-lg p-4 max-w-xs pointer-events-auto">
+            <div 
+              className="flex items-center justify-between cursor-pointer mb-2"
+              onClick={() => setIsSettingsCollapsed(!isSettingsCollapsed)}
+            >
+              <h3 className="text-lg font-bold">⚡ Settings</h3>
+              {isSettingsCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+            </div>
+            {!isSettingsCollapsed && (
+              <div className="space-y-3 text-sm">
               <div className="space-y-2">
                 <Label htmlFor="background-mode">Background Animation</Label>
                 <select
@@ -219,7 +236,8 @@ export default function CoinTossSimulator() {
                 />
                 <Label htmlFor="align-to-grid">Align particles to grid</Label>
               </div>
-            </div>
+              </div>
+            )}
           </div>
           
           </div>
