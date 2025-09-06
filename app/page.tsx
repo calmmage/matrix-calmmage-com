@@ -6,12 +6,12 @@ import {Input} from "@/components/ui/input"
 import {Label} from "@/components/ui/label"
 import {Button} from "@/components/ui/button"
 import {useTheme} from "next-themes"
-import {Eye, ChevronDown, ChevronUp, Menu} from "lucide-react"
+import {Eye, ChevronDown, ChevronUp} from "lucide-react"
 import MatrixBackground from "@/components/matrix-background"
 import {PageHeader} from "@/components/page-header"
 
 
-export default function CoinTossSimulator() {
+export default function MatrixStormwave() {
   const { theme, setTheme } = useTheme()
 
   const [mounted, setMounted] = useState(false)
@@ -161,7 +161,7 @@ export default function CoinTossSimulator() {
       />
       {!isZenMode && (
         <div className="min-h-screen p-4 md:p-8 relative z-10 pointer-events-none">
-          <div className="max-w-4xl mx-auto space-y-4 md:space-y-8 pointer-events-auto">
+          <div className="max-w-4xl mx-auto space-y-4 md:space-y-8 pointer-events-none flex flex-col items-center">
           <PageHeader
             mounted={mounted}
             isAnimationPaused={isAnimationPaused}
@@ -175,14 +175,14 @@ export default function CoinTossSimulator() {
             isStormActive={isStormActive}
           />
 
-          {/* Collapsible Settings - responsive positioning */}
-          <div className="fixed top-4 left-4 right-4 md:right-auto z-10 bg-background/20 backdrop-blur-sm rounded-lg p-3 md:p-4 md:max-w-xs pointer-events-auto border-2 border-background">
+          {/* Collapsible Settings - centered below header */}
+          <div className="w-full max-w-sm md:max-w-xs bg-background/20 backdrop-blur-sm rounded-lg p-3 md:p-4 pointer-events-auto shadow-2">
             <div 
               className="flex items-center justify-between cursor-pointer mb-2 select-none"
               onClick={() => setIsSettingsCollapsed(!isSettingsCollapsed)}
             >
-              <h3 className="text-lg font-bold text-foreground">
-                <Menu/>
+              <h3 className="text-lg font-bold  text-muted-foreground">
+                  Animation Settings
               </h3>
 
               {isSettingsCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
@@ -203,11 +203,11 @@ export default function CoinTossSimulator() {
                   }}
                   className="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
                 >
-                  <option value="matrix">🟢 Matrix Rain</option>
-                  <option value="pulse">💗 Pulse</option>
-                  <option value="sparkle">✨ Sparkle</option>
-                  <option value="waves">🌊 Waves</option>
-                  <option value="grid">⚡ Grid</option>
+                  <option value="matrix">Matrix Rain</option>
+                  <option value="pulse">Pulse</option>
+                  <option value="sparkle">Sparkle</option>
+                  <option value="waves">Waves</option>
+                  <option value="grid">Grid</option>
                 </select>
               </div>
               
@@ -219,20 +219,20 @@ export default function CoinTossSimulator() {
                   onChange={(e) => setClickEffect(e.target.value as any)}
                   className="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
                 >
-                  <option value="random">🎲 Random</option>
-                  <option value="explosion">💥 Explosion</option>
-                  <option value="waterfall">💧 Waterfall</option>
-                  <option value="crack">⚡ Crack</option>
-                  <option value="star">⭐ Star</option>
-                  <option value="fizzle">✨ Fizzle (Chaotic)</option>
-                  <option value="matrix_rain">🟢 Matrix Rain</option>
-                  <option value="glitch">📺 Glitch</option>
-                  <option value="binary">🔢 Binary Storm</option>
-                  <option value="cascade">🌊 Cascade</option>
-                  <option value="square">⬜ Square</option>
-                  <option value="diamond">💎 Diamond</option>
-                  <option value="cube">📦 3D Cube</option>
-                  <option value="octahedron">🔷 Octahedron</option>
+                  <option value="random">Random</option>
+                  <option value="explosion">Explosion</option>
+                  <option value="waterfall">Waterfall</option>
+                  <option value="crack">Crack</option>
+                  <option value="star">Star</option>
+                  <option value="fizzle">Fizzle (Chaotic)</option>
+                  <option value="matrix_rain">Matrix Rain</option>
+                  <option value="glitch">Glitch</option>
+                  <option value="binary">Binary Storm</option>
+                  <option value="cascade">Cascade</option>
+                  <option value="square">Square</option>
+                  <option value="diamond">Diamond</option>
+                  <option value="cube">3D Cube</option>
+                  <option value="octahedron">Octahedron</option>
                 </select>
               </div>
               
