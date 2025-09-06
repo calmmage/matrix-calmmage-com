@@ -6,9 +6,10 @@ import {Input} from "@/components/ui/input"
 import {Label} from "@/components/ui/label"
 import {Button} from "@/components/ui/button"
 import {useTheme} from "next-themes"
-import {Eye, ChevronDown, ChevronUp} from "lucide-react"
+import {Eye, ChevronDown, ChevronUp, Menu} from "lucide-react"
 import MatrixBackground from "@/components/matrix-background"
 import {PageHeader} from "@/components/page-header"
+
 
 export default function CoinTossSimulator() {
   const { theme, setTheme } = useTheme()
@@ -159,8 +160,8 @@ export default function CoinTossSimulator() {
         backgroundColor={backgroundColor}
       />
       {!isZenMode && (
-        <div className="min-h-screen p-8 relative z-10 pointer-events-none">
-          <div className="max-w-4xl mx-auto space-y-8 pointer-events-auto">
+        <div className="min-h-screen p-4 md:p-8 relative z-10 pointer-events-none">
+          <div className="max-w-4xl mx-auto space-y-4 md:space-y-8 pointer-events-auto">
           <PageHeader
             mounted={mounted}
             isAnimationPaused={isAnimationPaused}
@@ -174,17 +175,20 @@ export default function CoinTossSimulator() {
             isStormActive={isStormActive}
           />
 
-          {/* Collapsible Settings in top left */}
-          <div className="fixed top-4 left-4 z-10 bg-background/20 backdrop-blur-sm rounded-lg p-4 max-w-xs pointer-events-auto border-2 border-background">
+          {/* Collapsible Settings - responsive positioning */}
+          <div className="fixed top-4 left-4 right-4 md:right-auto z-10 bg-background/20 backdrop-blur-sm rounded-lg p-3 md:p-4 md:max-w-xs pointer-events-auto border-2 border-background">
             <div 
               className="flex items-center justify-between cursor-pointer mb-2 select-none"
               onClick={() => setIsSettingsCollapsed(!isSettingsCollapsed)}
             >
-              <h3 className="text-lg font-bold text-foreground">Settings</h3>
+              <h3 className="text-lg font-bold text-foreground">
+                <Menu/>
+              </h3>
+
               {isSettingsCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
             </div>
             {!isSettingsCollapsed && (
-              <div className="space-y-3 text-sm text-foreground">
+              <div className="space-y-3 text-sm md:text-sm text-foreground max-h-[60vh] overflow-y-auto overscroll-contain">
               <div className="space-y-2">
                 <Label htmlFor="background-mode">Background Animation</Label>
                 <select
