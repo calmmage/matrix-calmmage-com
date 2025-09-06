@@ -14,6 +14,7 @@ interface MatrixBackgroundProps {
   backgroundMode?: 'matrix' | 'pulse' | 'sparkle' | 'waves' | 'grid';
   backgroundSpeed?: number;
   backgroundRefreshRate?: number;
+  backgroundColor?: string;
 }
 
 interface Particle {
@@ -46,7 +47,8 @@ const MatrixBackground: React.FC<MatrixBackgroundProps> = ({
   particleLifetime = 1,
   backgroundMode = 'matrix',
   backgroundSpeed = 1,
-  backgroundRefreshRate = 1
+  backgroundRefreshRate = 1,
+  backgroundColor = '#1DD11D'
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { theme } = useTheme();
@@ -114,7 +116,7 @@ const MatrixBackground: React.FC<MatrixBackgroundProps> = ({
     }
 
     const drawBackground = () => {
-      const rgb = hexToRgb(particleColor);
+      const bgRgb = hexToRgb(backgroundColor);
       
       // Apply fade effect - but clear completely for waves mode
       if (backgroundMode === 'waves') {
@@ -131,7 +133,7 @@ const MatrixBackground: React.FC<MatrixBackgroundProps> = ({
       switch (backgroundMode) {
         case 'matrix':
           // Original simple matrix rain
-          ctx.fillStyle = theme === 'dark' ? '#282' : '#555';
+          ctx.fillStyle = `rgba(${bgRgb.r}, ${bgRgb.g}, ${bgRgb.b}, 0.8)`;
           ctx.font = `${fontSize}px arial`;
           
           for (let i = 0; i < drops.length; i++) {
@@ -153,7 +155,7 @@ const MatrixBackground: React.FC<MatrixBackgroundProps> = ({
               const distance = Math.sqrt(Math.pow(x - columns/2, 2) + Math.pow(y - rows/2, 2));
               const offset = Math.sin(backgroundTimeRef.current - distance * 0.1);
               if (offset > 0.7) {
-                ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${(offset - 0.7) * 1.5})`;
+                ctx.fillStyle = `rgba(${bgRgb.r}, ${bgRgb.g}, ${bgRgb.b}, ${(offset - 0.7) * 1.5})`;
                 ctx.fillText(gridLetters[x][y], x * fontSize, y * fontSize);
               }
             }
@@ -182,7 +184,7 @@ const MatrixBackground: React.FC<MatrixBackgroundProps> = ({
             }
             
             p.alpha = (Math.sin(backgroundTimeRef.current * 2 + p.pulse!) + 1) / 2;
-            ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${p.alpha * 0.5})`;
+            ctx.fillStyle = `rgba(${bgRgb.r}, ${bgRgb.g}, ${bgRgb.b}, ${p.alpha * 0.5})`;
             const gridX = Math.floor(p.x / fontSize);
             const gridY = Math.floor(p.y / fontSize);
             if (gridX >= 0 && gridX < columns && gridY >= 0 && gridY < rows) {
@@ -192,10 +194,8 @@ const MatrixBackground: React.FC<MatrixBackgroundProps> = ({
           break;
 
         case 'waves':
-          // Wave pattern with persistent letters - use brighter color
+          // Wave pattern with persistent letters - use backgroundColor
           ctx.font = `${fontSize}px arial`;
-          const waveColor = theme === 'dark' ? '#1DD11D' : '#00AA00'; // Bright green for waves
-          const waveRgb = hexToRgb(waveColor);
           for (let y = 0; y < rows; y++) {
             for (let x = 0; x < columns; x++) {
               const waveOffset = Math.sin(backgroundTimeRef.current + x * 0.2) * 2;
@@ -204,7 +204,7 @@ const MatrixBackground: React.FC<MatrixBackgroundProps> = ({
               // Map wave offset (-2 to 2) to alpha (0.1 to 0.8)
               const normalizedOffset = Math.abs(waveOffset) / 2; // 0 to 1
               const intensity = 0.1 + (normalizedOffset * 0.7); // Never fully transparent, never fully opaque
-              ctx.fillStyle = `rgba(${waveRgb.r}, ${waveRgb.g}, ${waveRgb.b}, ${intensity})`;
+              ctx.fillStyle = `rgba(${bgRgb.r}, ${bgRgb.g}, ${bgRgb.b}, ${intensity})`;
               // Use persistent grid letters
               ctx.fillText(gridLetters[x][y], x * fontSize, waveY * fontSize);
             }
@@ -218,7 +218,7 @@ const MatrixBackground: React.FC<MatrixBackgroundProps> = ({
             for (let y = 0; y < rows; y += 3) {
               const pulse = Math.sin(backgroundTimeRef.current * 2 + x * 0.5 + y * 0.5);
               if (pulse > 0.5) {
-                ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${pulse * 0.3})`;
+                ctx.fillStyle = `rgba(${bgRgb.r}, ${bgRgb.g}, ${bgRgb.b}, ${pulse * 0.3})`;
                 ctx.fillText(gridLetters[x][y], x * fontSize, y * fontSize);
               }
             }
@@ -889,7 +889,7 @@ const MatrixBackground: React.FC<MatrixBackgroundProps> = ({
       canvas.removeEventListener('click', handleClick);
       window.removeEventListener('resize', handleResize);
     };
-  }, [theme, isAnimationPaused, clickEffect, particleSpeed, particleCount, particleColor, particleLifetime, backgroundMode, backgroundSpeed]); // Add all dependencies
+  }, [theme, isAnimationPaused, clickEffect, particleSpeed, particleCount, particleColor, particleLifetime, backgroundMode, backgroundSpeed, backgroundRefreshRate, backgroundColor]); // Add all dependencies
 
   return <canvas ref={canvasRef} className="fixed top-0 left-0 w-full h-full z-0 pointer-events-auto" />;
 };

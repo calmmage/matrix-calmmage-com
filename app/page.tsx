@@ -56,6 +56,7 @@ export default function CoinTossSimulator() {
     setParticleSpeed(Number((Math.random() * 2.9 + 0.1).toFixed(1)))
     setParticleCount(Number((Math.random() * 2.5 + 0.5).toFixed(1)))
     setParticleColor(colors[Math.floor(Math.random() * colors.length)])
+    setBackgroundColor(colors[Math.floor(Math.random() * colors.length)])
     setParticleLifetime(Number((Math.random() * 29.8 + 0.2).toFixed(1)))
     setBackgroundSpeed(Number((Math.random() * 2.9 + 0.1).toFixed(1)))
     setBackgroundRefreshRate(Number((Math.random() * 2.9 + 0.1).toFixed(1)))
@@ -93,12 +94,12 @@ export default function CoinTossSimulator() {
           />
 
           {/* Collapsible Settings in top left */}
-          <div className="fixed top-4 left-4 z-10 bg-background/20 backdrop-blur-sm rounded-lg p-4 max-w-xs pointer-events-auto">
+          <div className="fixed top-4 left-4 z-10 bg-background/20 backdrop-blur-sm rounded-lg p-4 max-w-xs pointer-events-auto border-2 border-black">
             <div 
               className="flex items-center justify-between cursor-pointer mb-2"
               onClick={() => setIsSettingsCollapsed(!isSettingsCollapsed)}
             >
-              <h3 className="text-lg font-bold">⚡ Settings</h3>
+              <h3 className="text-lg font-bold">Settings</h3>
               {isSettingsCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
             </div>
             {!isSettingsCollapsed && (
@@ -224,6 +225,26 @@ export default function CoinTossSimulator() {
                     type="text"
                     value={particleColor}
                     onChange={(e) => setParticleColor(e.target.value)}
+                    className="flex-1"
+                    placeholder="#1DD11D"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="background-color">Background Color</Label>
+                <div className="flex gap-2">
+                  <input
+                    type="color"
+                    id="background-color"
+                    value={backgroundColor}
+                    onChange={(e) => setBackgroundColor(e.target.value)}
+                    className="h-10 w-20 rounded border border-input"
+                  />
+                  <Input
+                    type="text"
+                    value={backgroundColor}
+                    onChange={(e) => setBackgroundColor(e.target.value)}
                     className="flex-1"
                     placeholder="#1DD11D"
                   />
