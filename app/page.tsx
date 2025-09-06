@@ -20,6 +20,7 @@ export default function CoinTossSimulator() {
   const [particleSpeed, setParticleSpeed] = useState(1)
   const [particleCount, setParticleCount] = useState(1)
   const [particleColor, setParticleColor] = useState('#1DD11D')
+  const [backgroundColor, setBackgroundColor] = useState('#1DD11D')
   const [particleLifetime, setParticleLifetime] = useState(1)
   const [backgroundMode, setBackgroundMode] = useState<'matrix' | 'pulse' | 'sparkle' | 'waves' | 'grid'>('matrix')
   const [backgroundSpeed, setBackgroundSpeed] = useState(1)
@@ -32,13 +33,15 @@ export default function CoinTossSimulator() {
     setMounted(true)
   }, [])
 
-  // Auto-adjust particle color based on theme
+  // Auto-adjust particle and background colors based on theme
   useEffect(() => {
     if (!mounted) return
     if (theme === 'dark') {
       setParticleColor('#1DD11D') // Matrix green for dark theme
+      setBackgroundColor('#1DD11D')
     } else {
       setParticleColor('#333333') // Dark grey for light theme
+      setBackgroundColor('#333333')
     }
   }, [theme, mounted])
 
@@ -73,6 +76,7 @@ export default function CoinTossSimulator() {
         backgroundMode={backgroundMode}
         backgroundSpeed={backgroundSpeed}
         backgroundRefreshRate={backgroundRefreshRate}
+        backgroundColor={backgroundColor}
       />
       {!isZenMode && (
         <div className="min-h-screen p-8 relative z-10 pointer-events-none">
