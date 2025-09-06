@@ -8,7 +8,6 @@ import {Button} from "@/components/ui/button"
 import {useTheme} from "next-themes"
 import {Eye} from "lucide-react"
 import MatrixBackground from "@/components/matrix-background"
-import {VisualSettingsPanel} from "@/components/visual-settings-panel"
 import {PageHeader} from "@/components/page-header"
 
 export default function CoinTossSimulator() {
@@ -25,13 +24,29 @@ export default function CoinTossSimulator() {
   const [backgroundMode, setBackgroundMode] = useState<'matrix' | 'pulse' | 'sparkle' | 'waves' | 'grid'>('matrix')
   const [backgroundSpeed, setBackgroundSpeed] = useState(1)
   const [backgroundRefreshRate, setBackgroundRefreshRate] = useState(1)
-  const [isVisualSettingsOpen, setIsVisualSettingsOpen] = useState(false)
   const [isZenMode, setIsZenMode] = useState(false)
 
 
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Randomize all settings function
+  const randomizeSettings = () => {
+    const backgroundModes: Array<typeof backgroundMode> = ['matrix', 'pulse', 'sparkle', 'waves', 'grid']
+    const effects: Array<typeof clickEffect> = ['explosion', 'waterfall', 'crack', 'star', 'fizzle', 'matrix_rain', 'glitch', 'binary', 'cascade', 'square', 'diamond', 'cube', 'octahedron', 'random']
+    const colors = ['#1DD11D', '#FF0080', '#00FFFF', '#FFFF00', '#FF4500', '#9932CC', '#00FF00', '#FF1493']
+    
+    setBackgroundMode(backgroundModes[Math.floor(Math.random() * backgroundModes.length)])
+    setClickEffect(effects[Math.floor(Math.random() * effects.length)])
+    setParticleSpeed(Number((Math.random() * 2.9 + 0.1).toFixed(1)))
+    setParticleCount(Number((Math.random() * 2.5 + 0.5).toFixed(1)))
+    setParticleColor(colors[Math.floor(Math.random() * colors.length)])
+    setParticleLifetime(Number((Math.random() * 29.8 + 0.2).toFixed(1)))
+    setBackgroundSpeed(Number((Math.random() * 2.9 + 0.1).toFixed(1)))
+    setBackgroundRefreshRate(Number((Math.random() * 2.9 + 0.1).toFixed(1)))
+    setAlignToGrid(Math.random() > 0.5)
+  }
 
   // Separate state for tracking if we should be polling
   return (
@@ -53,16 +68,19 @@ export default function CoinTossSimulator() {
           <div className="max-w-4xl mx-auto space-y-8 pointer-events-auto">
           <PageHeader
             mounted={mounted}
-            onOpenVisualSettings={() => setIsVisualSettingsOpen(true)}
             isAnimationPaused={isAnimationPaused}
             toggleAnimation={() => setIsAnimationPaused(!isAnimationPaused)}
             theme={theme}
             toggleTheme={() => setTheme(theme === "dark" ? "light" : "dark")}
             isZenMode={isZenMode}
             toggleZenMode={() => setIsZenMode(!isZenMode)}
+            onRandomizeSettings={randomizeSettings}
           />
 
-          <VisualSettingsPanel open={isVisualSettingsOpen} onOpenChange={setIsVisualSettingsOpen}>
+          {/* Settings moved to central block */}
+          <div className="bg-background/20 backdrop-blur-sm rounded-lg p-6">
+            <h2 className="text-2xl font-bold mb-4 text-center">⚡ Visual Effects</h2>
+            <p className="text-muted-foreground text-center mb-6">Customize the Matrix background animations and particle effects.</p>
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="background-mode">Background Animation</Label>
@@ -202,7 +220,7 @@ export default function CoinTossSimulator() {
                 <Label htmlFor="align-to-grid">Align particles to grid</Label>
               </div>
             </div>
-          </VisualSettingsPanel>
+          </div>
           
           </div>
         </div>

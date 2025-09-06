@@ -2,26 +2,29 @@
 
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Sun, Moon, Play, Pause, Sparkles, Eye, EyeOff } from "lucide-react"
+import { Sun, Moon, Play, Pause, Eye, EyeOff, Zap, Shuffle } from "lucide-react"
 
 interface PageHeaderProps {
   mounted: boolean
-  onOpenVisualSettings: () => void
   isAnimationPaused: boolean
   toggleAnimation: () => void
   theme?: string
   toggleTheme: () => void
   isZenMode: boolean
   toggleZenMode: () => void
+  onRandomizeSettings: () => void
 }
 
-export function PageHeader({ mounted, onOpenVisualSettings, isAnimationPaused, toggleAnimation, theme, toggleTheme, isZenMode, toggleZenMode }: PageHeaderProps) {
+export function PageHeader({ mounted, isAnimationPaused, toggleAnimation, theme, toggleTheme, isZenMode, toggleZenMode, onRandomizeSettings }: PageHeaderProps) {
   return (
     <div className="text-center relative">
       {mounted && (
         <div className="absolute right-0 top-0 flex gap-2">
-          <Button variant="ghost" size="icon" onClick={onOpenVisualSettings} className="bg-white/20 hover:bg-white/30">
-            <Sparkles className="h-5 w-5" />
+          <Button variant="ghost" size="icon" onClick={onRandomizeSettings} className="bg-white/20 hover:bg-white/30">
+            <Shuffle className="h-5 w-5" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => {}} className="bg-white/20 hover:bg-white/30">
+            <Zap className="h-6 w-6" />
           </Button>
           <Button variant="ghost" size="icon" onClick={toggleAnimation} className="bg-white/20 hover:bg-white/30">
             {isAnimationPaused ? <Play className="h-5 w-5" /> : <Pause className="h-5 w-5" />}
