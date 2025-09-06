@@ -6,9 +6,9 @@ import { ThemeProvider } from 'next-themes'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
-  generator: 'v0.app',
+  title: 'Matrix Stormwave',
+  description: 'Interactive Matrix background with dynamic effects',
+  generator: 'Matrix Stormwave',
 }
 
 export default function RootLayout({

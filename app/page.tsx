@@ -4,7 +4,9 @@ import {useEffect, useState} from "react"
 import {Slider} from "@/components/ui/slider"
 import {Input} from "@/components/ui/input"
 import {Label} from "@/components/ui/label"
+import {Button} from "@/components/ui/button"
 import {useTheme} from "next-themes"
+import {Eye} from "lucide-react"
 import MatrixBackground from "@/components/matrix-background"
 import {VisualSettingsPanel} from "@/components/visual-settings-panel"
 import {PageHeader} from "@/components/page-header"
@@ -24,6 +26,7 @@ export default function CoinTossSimulator() {
   const [backgroundSpeed, setBackgroundSpeed] = useState(1)
   const [backgroundRefreshRate, setBackgroundRefreshRate] = useState(1)
   const [isVisualSettingsOpen, setIsVisualSettingsOpen] = useState(false)
+  const [isZenMode, setIsZenMode] = useState(false)
 
 
   useEffect(() => {
@@ -45,8 +48,9 @@ export default function CoinTossSimulator() {
         backgroundSpeed={backgroundSpeed}
         backgroundRefreshRate={backgroundRefreshRate}
       />
-      <div className="min-h-screen p-8 relative z-10 pointer-events-none">
-        <div className="max-w-4xl mx-auto space-y-8 pointer-events-auto">
+      {!isZenMode && (
+        <div className="min-h-screen p-8 relative z-10 pointer-events-none">
+          <div className="max-w-4xl mx-auto space-y-8 pointer-events-auto">
           <PageHeader
             mounted={mounted}
             onOpenVisualSettings={() => setIsVisualSettingsOpen(true)}
@@ -54,6 +58,8 @@ export default function CoinTossSimulator() {
             toggleAnimation={() => setIsAnimationPaused(!isAnimationPaused)}
             theme={theme}
             toggleTheme={() => setTheme(theme === "dark" ? "light" : "dark")}
+            isZenMode={isZenMode}
+            toggleZenMode={() => setIsZenMode(!isZenMode)}
           />
 
           <VisualSettingsPanel open={isVisualSettingsOpen} onOpenChange={setIsVisualSettingsOpen}>
@@ -198,8 +204,23 @@ export default function CoinTossSimulator() {
             </div>
           </VisualSettingsPanel>
           
+          </div>
         </div>
-      </div>
+      )}
+      
+      {/* Zen mode exit button */}
+      {isZenMode && (
+        <div className="fixed top-4 right-4 z-20">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setIsZenMode(false)}
+            className="bg-white/10 hover:bg-white/20 backdrop-blur-sm"
+          >
+            <Eye className="h-5 w-5" />
+          </Button>
+        </div>
+      )}
     </>
   )
 }
