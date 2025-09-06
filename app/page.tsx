@@ -6,12 +6,15 @@ import {Input} from "@/components/ui/input"
 import {Label} from "@/components/ui/label"
 import {Button} from "@/components/ui/button"
 import {useTheme} from "next-themes"
-import {Eye, ChevronDown, ChevronUp} from "lucide-react"
+import {Eye, ChevronDown, ChevronUp, Settings} from "lucide-react"
 import MatrixBackground from "@/components/matrix-background"
 import {PageHeader} from "@/components/page-header"
+import {VisualSettingsPanel} from "@/components/visual-settings-panel"
+import {useIsMobile} from "@/hooks/use-mobile"
 
 export default function CoinTossSimulator() {
   const { theme, setTheme } = useTheme()
+  const isMobile = useIsMobile()
 
   const [mounted, setMounted] = useState(false)
   const [isAnimationPaused, setIsAnimationPaused] = useState(false)
@@ -27,6 +30,7 @@ export default function CoinTossSimulator() {
   const [backgroundRefreshRate, setBackgroundRefreshRate] = useState(1)
   const [isZenMode, setIsZenMode] = useState(false)
   const [isSettingsCollapsed, setIsSettingsCollapsed] = useState(true)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   
   // Storm state
   const [isStormActive, setIsStormActive] = useState(false)
@@ -159,7 +163,7 @@ export default function CoinTossSimulator() {
         backgroundColor={backgroundColor}
       />
       {!isZenMode && (
-        <div className="min-h-screen p-8 relative z-10 pointer-events-none">
+        <div className={`min-h-screen relative z-10 pointer-events-none mobile-safe-all ${isMobile ? 'p-4' : 'p-8'}`}>
           <div className="max-w-4xl mx-auto space-y-8 pointer-events-auto">
           <PageHeader
             mounted={mounted}
@@ -174,190 +178,371 @@ export default function CoinTossSimulator() {
             isStormActive={isStormActive}
           />
 
-          {/* Collapsible Settings in top left */}
-          <div className="fixed top-4 left-4 z-10 bg-background/20 backdrop-blur-sm rounded-lg p-4 max-w-xs pointer-events-auto border-2 border-background">
-            <div 
-              className="flex items-center justify-between cursor-pointer mb-2 select-none"
-              onClick={() => setIsSettingsCollapsed(!isSettingsCollapsed)}
-            >
-              <h3 className="text-lg font-bold text-foreground">Settings</h3>
-              {isSettingsCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+          {/* Mobile Settings Button */}
+          {isMobile && (
+            <div className="fixed top-4 left-4 z-20 mobile-safe-top mobile-safe-left">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsSettingsOpen(true)}
+                className="bg-white/20 hover:bg-white/30 touch-target mobile-no-select"
+                title="Open Settings"
+              >
+                <Settings className="h-5 w-5" />
+                <span className="ml-2 text-xs">Settings</span>
+              </Button>
             </div>
-            {!isSettingsCollapsed && (
-              <div className="space-y-3 text-sm text-foreground">
-              <div className="space-y-2">
-                <Label htmlFor="background-mode">Background Animation</Label>
-                <select
-                  id="background-mode"
-                  value={backgroundMode}
-                  onChange={(e) => {
-                    setBackgroundMode(e.target.value as any);
-                    // Set a random click effect when background changes
-                    const effects: Array<typeof clickEffect> = ['explosion', 'waterfall', 'crack', 'star', 'fizzle', 'matrix_rain', 'glitch', 'binary', 'cascade', 'square', 'diamond', 'cube', 'octahedron'];
-                    const randomEffect = effects[Math.floor(Math.random() * effects.length)];
-                    setClickEffect(randomEffect);
-                  }}
-                  className="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
-                >
-                  <option value="matrix">🟢 Matrix Rain</option>
-                  <option value="pulse">💗 Pulse</option>
-                  <option value="sparkle">✨ Sparkle</option>
-                  <option value="waves">🌊 Waves</option>
-                  <option value="grid">⚡ Grid</option>
-                </select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="click-effect">Click Effect</Label>
-                <select
-                  id="click-effect"
-                  value={clickEffect}
-                  onChange={(e) => setClickEffect(e.target.value as any)}
-                  className="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
-                >
-                  <option value="random">🎲 Random</option>
-                  <option value="explosion">💥 Explosion</option>
-                  <option value="waterfall">💧 Waterfall</option>
-                  <option value="crack">⚡ Crack</option>
-                  <option value="star">⭐ Star</option>
-                  <option value="fizzle">✨ Fizzle (Chaotic)</option>
-                  <option value="matrix_rain">🟢 Matrix Rain</option>
-                  <option value="glitch">📺 Glitch</option>
-                  <option value="binary">🔢 Binary Storm</option>
-                  <option value="cascade">🌊 Cascade</option>
-                  <option value="square">⬜ Square</option>
-                  <option value="diamond">💎 Diamond</option>
-                  <option value="cube">📦 3D Cube</option>
-                  <option value="octahedron">🔷 Octahedron</option>
-                </select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="background-speed">Background Particle Speed: {backgroundSpeed.toFixed(1)}x</Label>
-                <Slider
-                  id="background-speed"
-                  min={0.1}
-                  max={3}
-                  step={0.1}
-                  value={[backgroundSpeed]}
-                  onValueChange={(value) => setBackgroundSpeed(value[0])}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="background-refresh">Background Refresh Rate: {backgroundRefreshRate.toFixed(1)}x</Label>
-                <Slider
-                  id="background-refresh"
-                  min={0.1}
-                  max={3}
-                  step={0.1}
-                  value={[backgroundRefreshRate]}
-                  onValueChange={(value) => setBackgroundRefreshRate(value[0])}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="particle-speed">Particle Speed: {particleSpeed.toFixed(1)}x</Label>
-                <Slider
-                  id="particle-speed"
-                  min={0.1}
-                  max={3}
-                  step={0.1}
-                  value={[particleSpeed]}
-                  onValueChange={(value) => setParticleSpeed(value[0])}
-                />
-              </div>
+          )}
 
-              <div className="space-y-2">
-                <Label htmlFor="particle-count">Particle Count: {Math.round(particleCount * 20)}</Label>
-                <Slider
-                  id="particle-count"
-                  min={0.5}
-                  max={3}
-                  step={0.1}
-                  value={[particleCount]}
-                  onValueChange={(value) => setParticleCount(value[0])}
-                />
+          {/* Desktop Settings Panel */}
+          {!isMobile && (
+            <div className="fixed top-4 left-4 z-10 bg-background/20 backdrop-blur-sm rounded-lg p-4 max-w-xs pointer-events-auto border-2 border-background">
+              <div 
+                className="flex items-center justify-between cursor-pointer mb-2 select-none"
+                onClick={() => setIsSettingsCollapsed(!isSettingsCollapsed)}
+              >
+                <h3 className="text-lg font-bold text-foreground">Settings</h3>
+                {isSettingsCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="particle-lifetime">Particle Lifetime: {(particleLifetime * 2).toFixed(1)}s</Label>
-                <Slider
-                  id="particle-lifetime"
-                  min={0.2}
-                  max={30}
-                  step={0.2}
-                  value={[particleLifetime]}
-                  onValueChange={(value) => setParticleLifetime(value[0])}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="particle-color">Particle Color</Label>
-                <div className="flex gap-2">
-                  <input
-                    type="color"
-                    id="particle-color"
-                    value={particleColor}
-                    onChange={(e) => setParticleColor(e.target.value)}
-                    className="h-10 w-20 rounded border border-input"
-                  />
-                  <Input
-                    type="text"
-                    value={particleColor}
-                    onChange={(e) => setParticleColor(e.target.value)}
-                    className="flex-1"
-                    placeholder="#1DD11D"
+              {!isSettingsCollapsed && (
+                <div className="space-y-3 text-sm text-foreground">
+                <div className="space-y-2">
+                  <Label htmlFor="background-mode">Background Animation</Label>
+                  <select
+                    id="background-mode"
+                    value={backgroundMode}
+                    onChange={(e) => {
+                      setBackgroundMode(e.target.value as any);
+                      // Set a random click effect when background changes
+                      const effects: Array<typeof clickEffect> = ['explosion', 'waterfall', 'crack', 'star', 'fizzle', 'matrix_rain', 'glitch', 'binary', 'cascade', 'square', 'diamond', 'cube', 'octahedron'];
+                      const randomEffect = effects[Math.floor(Math.random() * effects.length)];
+                      setClickEffect(randomEffect);
+                    }}
+                    className="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                  >
+                    <option value="matrix">🟢 Matrix Rain</option>
+                    <option value="pulse">💗 Pulse</option>
+                    <option value="sparkle">✨ Sparkle</option>
+                    <option value="waves">🌊 Waves</option>
+                    <option value="grid">⚡ Grid</option>
+                  </select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="click-effect">Click Effect</Label>
+                  <select
+                    id="click-effect"
+                    value={clickEffect}
+                    onChange={(e) => setClickEffect(e.target.value as any)}
+                    className="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                  >
+                    <option value="random">🎲 Random</option>
+                    <option value="explosion">💥 Explosion</option>
+                    <option value="waterfall">💧 Waterfall</option>
+                    <option value="crack">⚡ Crack</option>
+                    <option value="star">⭐ Star</option>
+                    <option value="fizzle">✨ Fizzle (Chaotic)</option>
+                    <option value="matrix_rain">🟢 Matrix Rain</option>
+                    <option value="glitch">📺 Glitch</option>
+                    <option value="binary">🔢 Binary Storm</option>
+                    <option value="cascade">🌊 Cascade</option>
+                    <option value="square">⬜ Square</option>
+                    <option value="diamond">💎 Diamond</option>
+                    <option value="cube">📦 3D Cube</option>
+                    <option value="octahedron">🔷 Octahedron</option>
+                  </select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="background-speed">Background Particle Speed: {backgroundSpeed.toFixed(1)}x</Label>
+                  <Slider
+                    id="background-speed"
+                    min={0.1}
+                    max={3}
+                    step={0.1}
+                    value={[backgroundSpeed]}
+                    onValueChange={(value) => setBackgroundSpeed(value[0])}
                   />
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="background-color">Background Color</Label>
-                <div className="flex gap-2">
-                  <input
-                    type="color"
-                    id="background-color"
-                    value={backgroundColor}
-                    onChange={(e) => setBackgroundColor(e.target.value)}
-                    className="h-10 w-20 rounded border border-input"
-                  />
-                  <Input
-                    type="text"
-                    value={backgroundColor}
-                    onChange={(e) => setBackgroundColor(e.target.value)}
-                    className="flex-1"
-                    placeholder="#1DD11D"
+                
+                <div className="space-y-2">
+                  <Label htmlFor="background-refresh">Background Refresh Rate: {backgroundRefreshRate.toFixed(1)}x</Label>
+                  <Slider
+                    id="background-refresh"
+                    min={0.1}
+                    max={3}
+                    step={0.1}
+                    value={[backgroundRefreshRate]}
+                    onValueChange={(value) => setBackgroundRefreshRate(value[0])}
                   />
                 </div>
-              </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="particle-speed">Particle Speed: {particleSpeed.toFixed(1)}x</Label>
+                  <Slider
+                    id="particle-speed"
+                    min={0.1}
+                    max={3}
+                    step={0.1}
+                    value={[particleSpeed]}
+                    onValueChange={(value) => setParticleSpeed(value[0])}
+                  />
+                </div>
 
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="align-to-grid"
-                  checked={alignToGrid}
-                  onChange={(e) => setAlignToGrid(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                />
-                <Label htmlFor="align-to-grid">Align particles to grid</Label>
-              </div>
-              </div>
-            )}
-          </div>
+                <div className="space-y-2">
+                  <Label htmlFor="particle-count">Particle Count: {Math.round(particleCount * 20)}</Label>
+                  <Slider
+                    id="particle-count"
+                    min={0.5}
+                    max={3}
+                    step={0.1}
+                    value={[particleCount]}
+                    onValueChange={(value) => setParticleCount(value[0])}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="particle-lifetime">Particle Lifetime: {(particleLifetime * 2).toFixed(1)}s</Label>
+                  <Slider
+                    id="particle-lifetime"
+                    min={0.2}
+                    max={30}
+                    step={0.2}
+                    value={[particleLifetime]}
+                    onValueChange={(value) => setParticleLifetime(value[0])}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="particle-color">Particle Color</Label>
+                  <div className="flex gap-2">
+                    <input
+                      type="color"
+                      id="particle-color"
+                      value={particleColor}
+                      onChange={(e) => setParticleColor(e.target.value)}
+                      className="h-10 w-20 rounded border border-input"
+                    />
+                    <Input
+                      type="text"
+                      value={particleColor}
+                      onChange={(e) => setParticleColor(e.target.value)}
+                      className="flex-1"
+                      placeholder="#1DD11D"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="background-color">Background Color</Label>
+                  <div className="flex gap-2">
+                    <input
+                      type="color"
+                      id="background-color"
+                      value={backgroundColor}
+                      onChange={(e) => setBackgroundColor(e.target.value)}
+                      className="h-10 w-20 rounded border border-input"
+                    />
+                    <Input
+                      type="text"
+                      value={backgroundColor}
+                      onChange={(e) => setBackgroundColor(e.target.value)}
+                      className="flex-1"
+                      placeholder="#1DD11D"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="align-to-grid"
+                    checked={alignToGrid}
+                    onChange={(e) => setAlignToGrid(e.target.checked)}
+                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                  <Label htmlFor="align-to-grid">Align particles to grid</Label>
+                </div>
+                </div>
+              )}
+            </div>
+          )}
           
           </div>
         </div>
       )}
+
+      {/* Mobile Settings Sheet */}
+      <VisualSettingsPanel open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+        <div className="space-y-3 text-sm text-foreground">
+          <div className="space-y-2">
+            <Label htmlFor="mobile-background-mode">Background Animation</Label>
+            <select
+              id="mobile-background-mode"
+              value={backgroundMode}
+              onChange={(e) => {
+                setBackgroundMode(e.target.value as any);
+                // Set a random click effect when background changes
+                const effects: Array<typeof clickEffect> = ['explosion', 'waterfall', 'crack', 'star', 'fizzle', 'matrix_rain', 'glitch', 'binary', 'cascade', 'square', 'diamond', 'cube', 'octahedron'];
+                const randomEffect = effects[Math.floor(Math.random() * effects.length)];
+                setClickEffect(randomEffect);
+              }}
+              className="h-12 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              <option value="matrix">🟢 Matrix Rain</option>
+              <option value="pulse">💗 Pulse</option>
+              <option value="sparkle">✨ Sparkle</option>
+              <option value="waves">🌊 Waves</option>
+              <option value="grid">⚡ Grid</option>
+            </select>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="mobile-click-effect">Click Effect</Label>
+            <select
+              id="mobile-click-effect"
+              value={clickEffect}
+              onChange={(e) => setClickEffect(e.target.value as any)}
+              className="h-12 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              <option value="random">🎲 Random</option>
+              <option value="explosion">💥 Explosion</option>
+              <option value="waterfall">💧 Waterfall</option>
+              <option value="crack">⚡ Crack</option>
+              <option value="star">⭐ Star</option>
+              <option value="fizzle">✨ Fizzle (Chaotic)</option>
+              <option value="matrix_rain">🟢 Matrix Rain</option>
+              <option value="glitch">📺 Glitch</option>
+              <option value="binary">🔢 Binary Storm</option>
+              <option value="cascade">🌊 Cascade</option>
+              <option value="square">⬜ Square</option>
+              <option value="diamond">💎 Diamond</option>
+              <option value="cube">📦 3D Cube</option>
+              <option value="octahedron">🔷 Octahedron</option>
+            </select>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="mobile-background-speed">Background Particle Speed: {backgroundSpeed.toFixed(1)}x</Label>
+            <Slider
+              id="mobile-background-speed"
+              min={0.1}
+              max={3}
+              step={0.1}
+              value={[backgroundSpeed]}
+              onValueChange={(value) => setBackgroundSpeed(value[0])}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="mobile-background-refresh">Background Refresh Rate: {backgroundRefreshRate.toFixed(1)}x</Label>
+            <Slider
+              id="mobile-background-refresh"
+              min={0.1}
+              max={3}
+              step={0.1}
+              value={[backgroundRefreshRate]}
+              onValueChange={(value) => setBackgroundRefreshRate(value[0])}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="mobile-particle-speed">Particle Speed: {particleSpeed.toFixed(1)}x</Label>
+            <Slider
+              id="mobile-particle-speed"
+              min={0.1}
+              max={3}
+              step={0.1}
+              value={[particleSpeed]}
+              onValueChange={(value) => setParticleSpeed(value[0])}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="mobile-particle-count">Particle Count: {Math.round(particleCount * 20)}</Label>
+            <Slider
+              id="mobile-particle-count"
+              min={0.5}
+              max={3}
+              step={0.1}
+              value={[particleCount]}
+              onValueChange={(value) => setParticleCount(value[0])}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="mobile-particle-lifetime">Particle Lifetime: {(particleLifetime * 2).toFixed(1)}s</Label>
+            <Slider
+              id="mobile-particle-lifetime"
+              min={0.2}
+              max={30}
+              step={0.2}
+              value={[particleLifetime]}
+              onValueChange={(value) => setParticleLifetime(value[0])}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="mobile-particle-color">Particle Color</Label>
+            <div className="flex gap-2">
+              <input
+                type="color"
+                id="mobile-particle-color"
+                value={particleColor}
+                onChange={(e) => setParticleColor(e.target.value)}
+                className="h-12 w-20 rounded border border-input"
+              />
+              <Input
+                type="text"
+                value={particleColor}
+                onChange={(e) => setParticleColor(e.target.value)}
+                className="flex-1 h-12"
+                placeholder="#1DD11D"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="mobile-background-color">Background Color</Label>
+            <div className="flex gap-2">
+              <input
+                type="color"
+                id="mobile-background-color"
+                value={backgroundColor}
+                onChange={(e) => setBackgroundColor(e.target.value)}
+                className="h-12 w-20 rounded border border-input"
+              />
+              <Input
+                type="text"
+                value={backgroundColor}
+                onChange={(e) => setBackgroundColor(e.target.value)}
+                className="flex-1 h-12"
+                placeholder="#1DD11D"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="mobile-align-to-grid"
+              checked={alignToGrid}
+              onChange={(e) => setAlignToGrid(e.target.checked)}
+              className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary"
+            />
+            <Label htmlFor="mobile-align-to-grid" className="text-base">Align particles to grid</Label>
+          </div>
+        </div>
+      </VisualSettingsPanel>
       
       {/* Zen mode exit button */}
       {isZenMode && (
-        <div className="fixed top-4 right-4 z-20">
+        <div className="fixed top-4 right-4 z-20 mobile-safe-top mobile-safe-right">
           <Button 
             variant="ghost" 
             size="icon" 
             onClick={() => setIsZenMode(false)}
-            className="bg-white/10 hover:bg-white/20 backdrop-blur-sm"
+            className="bg-white/10 hover:bg-white/20 backdrop-blur-sm touch-target mobile-no-select"
           >
             <Eye className="h-5 w-5" />
           </Button>

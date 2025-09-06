@@ -22,7 +22,7 @@ export function VisualSettingsPanel({ open, onOpenChange, children }: VisualSett
             Customize the Matrix background animations and particle effects.
           </SheetDescription>
         </SheetHeader>
-        <div className="px-4 py-4 space-y-4 overflow-y-auto max-h-[calc(100vh-120px)]">
+        <div className="px-4 py-4 space-y-4 overflow-y-auto max-h-[calc(100vh-120px)] mobile-scroll">
           {children}
         </div>
       </SheetContent>
