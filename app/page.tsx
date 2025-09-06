@@ -27,6 +27,13 @@ export default function CoinTossSimulator() {
   const [backgroundRefreshRate, setBackgroundRefreshRate] = useState(1)
   const [isZenMode, setIsZenMode] = useState(false)
   const [isSettingsCollapsed, setIsSettingsCollapsed] = useState(true)
+  
+  // Storm state
+  const [isStormActive, setIsStormActive] = useState(false)
+  const [stormDuration, setStormDuration] = useState(0)
+  const [stormIntensity, setStormIntensity] = useState(0)
+  const [stormTimeLeft, setStormTimeLeft] = useState(0)
+  const [stormEventType, setStormEventType] = useState<typeof clickEffect>('explosion')
 
 
   useEffect(() => {
@@ -45,6 +52,52 @@ export default function CoinTossSimulator() {
     }
   }, [theme, mounted])
 
+  // Storm effect useEffect
+  useEffect(() => {
+    if (!isStormActive) return
+
+    const stormInterval = setInterval(() => {
+      // Generate random screen position
+      const x = Math.random() * window.innerWidth
+      const y = Math.random() * window.innerHeight
+      
+      // Trigger the chosen storm effect at random location
+      // We'll simulate a click event to reuse existing effect logic
+      const syntheticEvent = {
+        clientX: x,
+        clientY: y,
+        preventDefault: () => {},
+        stopPropagation: () => {}
+      } as MouseEvent
+      
+      // Create a custom event that the MatrixBackground can listen to
+      const stormEvent = new CustomEvent('storm-effect', {
+        detail: { x, y, effect: stormEventType }
+      })
+      window.dispatchEvent(stormEvent)
+      
+    }, 1000 / stormIntensity) // Spawn based on intensity (events per second)
+
+    // Countdown timer
+    const countdownInterval = setInterval(() => {
+      setStormTimeLeft(prev => {
+        if (prev <= 100) {
+          // Storm is ending
+          setIsStormActive(false)
+          setStormTimeLeft(0)
+          console.log('🌪️ Storm ended!')
+          return 0
+        }
+        return prev - 100
+      })
+    }, 100)
+
+    return () => {
+      clearInterval(stormInterval)
+      clearInterval(countdownInterval)
+    }
+  }, [isStormActive, stormIntensity, stormEventType])
+
   // Randomize all settings function
   const randomizeSettings = () => {
     const backgroundModes: Array<typeof backgroundMode> = ['matrix', 'pulse', 'sparkle', 'waves', 'grid']
@@ -61,6 +114,32 @@ export default function CoinTossSimulator() {
     setBackgroundSpeed(Number((Math.random() * 2.9 + 0.1).toFixed(1)))
     setBackgroundRefreshRate(Number((Math.random() * 2.9 + 0.1).toFixed(1)))
     setAlignToGrid(Math.random() > 0.5)
+  }
+
+  // Storm generation function
+  const startStorm = () => {
+    if (isStormActive) return // Don't start if already active
+    
+    // Random storm parameters
+    const duration = Math.random() * 8000 + 3000 // 3-11 seconds
+    const intensity = Math.random() * 8 + 2 // 2-10 events per second
+    
+    // Pick ONE event type for the entire storm (including 'random')
+    const allEffects: Array<typeof clickEffect> = [
+      'explosion', 'waterfall', 'crack', 'star', 'fizzle', 
+      'matrix_rain', 'glitch', 'binary', 'cascade', 
+      'square', 'diamond', 'cube', 'octahedron', 'random'
+    ]
+    const chosenEffect = allEffects[Math.floor(Math.random() * allEffects.length)]
+    
+    // Set storm state
+    setIsStormActive(true)
+    setStormDuration(duration)
+    setStormIntensity(intensity)
+    setStormTimeLeft(duration)
+    setStormEventType(chosenEffect)
+    
+    console.log(`🌪️ Storm started! Effect: ${chosenEffect}, Duration: ${(duration/1000).toFixed(1)}s, Intensity: ${intensity.toFixed(1)} events/sec`)
   }
 
   // Separate state for tracking if we should be polling
@@ -91,6 +170,8 @@ export default function CoinTossSimulator() {
             isZenMode={isZenMode}
             toggleZenMode={() => setIsZenMode(!isZenMode)}
             onRandomizeSettings={randomizeSettings}
+            onStartStorm={startStorm}
+            isStormActive={isStormActive}
           />
 
           {/* Collapsible Settings in top left */}

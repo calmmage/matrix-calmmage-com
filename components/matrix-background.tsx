@@ -847,6 +847,67 @@ const MatrixBackground: React.FC<MatrixBackgroundProps> = ({
     // Add click listener
     canvas.addEventListener('click', handleClick);
 
+    // Add storm event listener
+    const handleStormEffect = (event: CustomEvent) => {
+      const { x, y, effect } = event.detail
+      
+      let newParticles: Particle[] = []
+      let effectToUse = effect
+      
+      // Handle random effect for storm
+      if (effect === 'random') {
+        const effects = ['explosion', 'waterfall', 'crack', 'star', 'fizzle', 'matrix_rain', 'glitch', 'binary', 'cascade', 'square', 'diamond', 'cube', 'octahedron']
+        effectToUse = effects[Math.floor(Math.random() * effects.length)] as any
+      }
+      
+      // Use the same effect creation logic as handleClick
+      switch (effectToUse) {
+        case 'explosion':
+          newParticles = createExplosionParticles(x, y)
+          break
+        case 'waterfall':
+          newParticles = createWaterfallParticles(x, y)
+          break
+        case 'crack':
+          newParticles = createCrackParticles(x, y)
+          break
+        case 'star':
+          newParticles = createStarParticles(x, y)
+          break
+        case 'fizzle':
+          newParticles = createFizzleParticles(x, y)
+          break
+        case 'matrix_rain':
+          newParticles = createMatrixRainParticles(x, y)
+          break
+        case 'glitch':
+          newParticles = createGlitchParticles(x, y)
+          break
+        case 'binary':
+          newParticles = createBinaryParticles(x, y)
+          break
+        case 'cascade':
+          newParticles = createCascadeParticles(x, y)
+          break
+        case 'square':
+          newParticles = createSquareParticles(x, y)
+          break
+        case 'diamond':
+          newParticles = createDiamondParticles(x, y)
+          break
+        case 'cube':
+          newParticles = createCubeParticles(x, y)
+          break
+        case 'octahedron':
+          newParticles = createOctahedronParticles(x, y)
+          break
+      }
+      
+      particlesRef.current = [...particlesRef.current, ...newParticles]
+    }
+    
+    window.addEventListener('storm-effect', handleStormEffect as EventListener);
+
     // Clear any existing interval
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
@@ -888,6 +949,7 @@ const MatrixBackground: React.FC<MatrixBackgroundProps> = ({
       }
       canvas.removeEventListener('click', handleClick);
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('storm-effect', handleStormEffect as EventListener);
     };
   }, [theme, isAnimationPaused, clickEffect, particleSpeed, particleCount, particleColor, particleLifetime, backgroundMode, backgroundSpeed, backgroundRefreshRate, backgroundColor]); // Add all dependencies
 

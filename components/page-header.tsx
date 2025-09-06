@@ -13,9 +13,11 @@ interface PageHeaderProps {
   isZenMode: boolean
   toggleZenMode: () => void
   onRandomizeSettings: () => void
+  onStartStorm: () => void
+  isStormActive: boolean
 }
 
-export function PageHeader({ mounted, isAnimationPaused, toggleAnimation, theme, toggleTheme, isZenMode, toggleZenMode, onRandomizeSettings }: PageHeaderProps) {
+export function PageHeader({ mounted, isAnimationPaused, toggleAnimation, theme, toggleTheme, isZenMode, toggleZenMode, onRandomizeSettings, onStartStorm, isStormActive }: PageHeaderProps) {
   return (
     <div className="text-center relative">
       {mounted && (
@@ -23,7 +25,13 @@ export function PageHeader({ mounted, isAnimationPaused, toggleAnimation, theme,
           <Button variant="ghost" size="icon" onClick={onRandomizeSettings} className="bg-white/20 hover:bg-white/30">
             <Shuffle className="h-5 w-5" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={() => {}} className="bg-white/20 hover:bg-white/30">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={onStartStorm}
+            disabled={isStormActive}
+            className={`bg-white/20 hover:bg-white/30 ${isStormActive ? 'opacity-50 cursor-not-allowed animate-pulse' : ''}`}
+          >
             <Zap className="h-6 w-6" />
           </Button>
           <Button variant="ghost" size="icon" onClick={toggleAnimation} className="bg-white/20 hover:bg-white/30">
