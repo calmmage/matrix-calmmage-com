@@ -37,8 +37,8 @@ export function PageHeader({ mounted, isAnimationPaused, toggleAnimation, theme,
           </Button>
         </div>
       )}
-      <Card className="bg-background/20 backdrop-blur-sm w-fit mx-auto px-8 py-6">
-        <h1 className="text-4xl font-bold mb-2">Matrix Stormwave</h1>
+      <Card className="bg-background/20 backdrop-blur-sm w-fit mx-auto px-8 py-6 select-none">
+        <h1 className="text-4xl font-bold mb-2 text-foreground">Matrix Stormwave</h1>
         <p className="text-muted-foreground">Interactive Matrix background with dynamic effects!</p>
       </Card>
     </div>

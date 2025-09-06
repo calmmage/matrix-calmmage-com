@@ -94,16 +94,16 @@ export default function CoinTossSimulator() {
           />
 
           {/* Collapsible Settings in top left */}
-          <div className="fixed top-4 left-4 z-10 bg-background/20 backdrop-blur-sm rounded-lg p-4 max-w-xs pointer-events-auto border-2 border-black">
+          <div className="fixed top-4 left-4 z-10 bg-background/20 backdrop-blur-sm rounded-lg p-4 max-w-xs pointer-events-auto border-2 border-background">
             <div 
-              className="flex items-center justify-between cursor-pointer mb-2"
+              className="flex items-center justify-between cursor-pointer mb-2 select-none"
               onClick={() => setIsSettingsCollapsed(!isSettingsCollapsed)}
             >
-              <h3 className="text-lg font-bold">Settings</h3>
+              <h3 className="text-lg font-bold text-foreground">Settings</h3>
               {isSettingsCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
             </div>
             {!isSettingsCollapsed && (
-              <div className="space-y-3 text-sm">
+              <div className="space-y-3 text-sm text-foreground">
               <div className="space-y-2">
                 <Label htmlFor="background-mode">Background Animation</Label>
                 <select
