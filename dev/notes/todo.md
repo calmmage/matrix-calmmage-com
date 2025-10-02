@@ -1,0 +1,3 @@
+- Optimize Performance
+  - Remove 'glitch'? 
+- Add some voice-driven effects
