@@ -6,15 +6,20 @@ import { useTheme } from 'next-themes';
 interface MatrixBackgroundProps {
   isAnimationPaused: boolean;
   clickEffect?: 'explosion' | 'waterfall' | 'crack' | 'star' | 'fizzle' | 'matrix_rain' | 'glitch' | 'binary' | 'cascade' | 'square' | 'diamond' | 'cube' | 'octahedron' | 'random';
-  alignToGrid?: boolean;
   particleSpeed?: number;
   particleCount?: number;
   particleColor?: string;
   particleLifetime?: number;
   backgroundMode?: 'matrix' | 'pulse' | 'sparkle' | 'waves' | 'grid';
   backgroundSpeed?: number;
-  backgroundRefreshRate?: number;
   backgroundColor?: string;
+  rippleIntensity?: number;
+  rippleCharacter?: string;
+  rippleParticleLimit?: number;
+  rippleFadeSpeed?: number;
+  rippleFadeFromCenter?: boolean;
+  enableTrails?: boolean;
+  enableMouseRipples?: boolean;
 }
 
 interface Particle {
@@ -37,18 +42,23 @@ interface Shape3DPoint {
   z: number;
 }
 
-const MatrixBackground: React.FC<MatrixBackgroundProps> = ({ 
-  isAnimationPaused, 
+const MatrixBackground: React.FC<MatrixBackgroundProps> = ({
+  isAnimationPaused,
   clickEffect = 'explosion', // 'random',
-  alignToGrid = true,
   particleSpeed = 1,
   particleCount = 1,
   particleColor = '#282', //  '#1DD11D',
   particleLifetime = 1,
   backgroundMode = 'matrix',
   backgroundSpeed = 1,
-  backgroundRefreshRate = 1,
-  backgroundColor = '#1DD11D'
+  backgroundColor = '#1DD11D',
+  rippleIntensity = 1,
+  rippleCharacter = '',
+  rippleParticleLimit = 100,
+  rippleFadeSpeed = 0.05,
+  rippleFadeFromCenter = false,
+  enableTrails = true,
+  enableMouseRipples = true
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { theme } = useTheme();
@@ -57,6 +67,8 @@ const MatrixBackground: React.FC<MatrixBackgroundProps> = ({
   const backgroundParticlesRef = useRef<{x: number; y: number; alpha: number; size: number; pulse?: number}[]>([]);
   const backgroundTimeRef = useRef(0);
   const shape3DRef = useRef<{points: Shape3DPoint[]; rotation: {x: number; y: number; z: number}; center: {x: number; y: number}; life?: number; maxLife?: number}[]>([]);
+  const ripplesRef = useRef<{x: number; y: number; radius: number; maxRadius: number; life: number; maxLife: number}[]>([]);
+  const lastMousePosRef = useRef<{x: number; y: number; time: number} | null>(null);
 
   // Convert hex color to RGB
   const hexToRgb = (hex: string) => {
@@ -117,25 +129,70 @@ const MatrixBackground: React.FC<MatrixBackgroundProps> = ({
 
     const drawBackground = () => {
       const bgRgb = hexToRgb(backgroundColor);
-      
-      // Apply fade effect - but clear completely for waves mode
-      if (backgroundMode === 'waves') {
+
+      // Apply fade effect - but clear completely for waves mode or if trails disabled
+      if (backgroundMode === 'waves' || !enableTrails) {
         // Clear background completely for waves to avoid trails
         ctx.fillStyle = theme === 'dark' ? 'rgb(21, 31, 55)' : 'rgb(250, 250, 245)';
       } else {
-        // Normal fade for other modes
-        ctx.fillStyle = theme === 'dark' ? 'rgba(21, 31, 55, 0.05)' : 'rgba(250, 250, 245, 0.05)';
+        // Use rippleFadeSpeed to control trail fade
+        const fadeAlpha = Math.min(0.5, rippleFadeSpeed);
+        ctx.fillStyle = theme === 'dark' ? `rgba(21, 31, 55, ${fadeAlpha})` : `rgba(250, 250, 245, ${fadeAlpha})`;
       }
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
+
       backgroundTimeRef.current += 0.02 * backgroundSpeed;
+
+      // Update and draw ripples as particles
+      const rgb = hexToRgb(particleColor);
+      ctx.font = `${fontSize}px arial`;
+
+      for (let i = ripplesRef.current.length - 1; i >= 0; i--) {
+        const ripple = ripplesRef.current[i];
+        ripple.life--;
+        ripple.radius += 2 * rippleIntensity;
+
+        // Each ripple gets its own particle budget from the limit
+        // Older ripples (higher index after reverse iteration) get priority
+        const baseParticlesPerRipple = Math.round(30 * rippleIntensity);
+        const particlesPerRipple = Math.min(baseParticlesPerRipple, rippleParticleLimit);
+        const timeAlpha = ripple.life / ripple.maxLife;
+
+        for (let j = 0; j < particlesPerRipple; j++) {
+          const angle = (Math.PI * 2 * j) / particlesPerRipple;
+          const x = ripple.x + Math.cos(angle) * ripple.radius;
+          const y = ripple.y + Math.sin(angle) * ripple.radius;
+
+          // Align to grid
+          const gridX = Math.round(x / fontSize) * fontSize;
+          const gridY = Math.round(y / fontSize) * fontSize;
+
+          // Calculate alpha based on settings
+          let alpha = timeAlpha;
+          if (rippleFadeFromCenter) {
+            // Fade based on distance from center
+            const distanceRatio = ripple.radius / ripple.maxRadius;
+            alpha = timeAlpha * (1 - distanceRatio);
+          }
+
+          ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
+
+          // Use custom character or random
+          const char = rippleCharacter || letters[Math.floor(Math.random() * letters.length)];
+          ctx.fillText(char, gridX, gridY);
+        }
+
+        if (ripple.life <= 0 || ripple.radius > ripple.maxRadius) {
+          ripplesRef.current.splice(i, 1);
+        }
+      }
       
       switch (backgroundMode) {
         case 'matrix':
           // Original simple matrix rain
           ctx.fillStyle = `rgba(${bgRgb.r}, ${bgRgb.g}, ${bgRgb.b}, 0.8)`;
           ctx.font = `${fontSize}px arial`;
-          
+
           for (let i = 0; i < drops.length; i++) {
             const text = letters[Math.floor(Math.random() * letters.length)];
             ctx.fillText(text, i * fontSize, drops[i] * fontSize);
@@ -795,7 +852,7 @@ const MatrixBackground: React.FC<MatrixBackgroundProps> = ({
       
       // Handle random effect
       if (clickEffect === 'random') {
-        const effects = ['explosion', 'waterfall', 'crack', 'star', 'fizzle', 'matrix_rain', 'glitch', 'binary', 'cascade', 'square', 'diamond', 'cube', 'octahedron'];
+        const effects = ['explosion', 'waterfall', 'crack', 'star', 'fizzle', 'matrix_rain', 'binary', 'cascade', 'square', 'diamond', 'cube', 'octahedron'];
         effectToUse = effects[Math.floor(Math.random() * effects.length)] as any;
       }
       
@@ -844,8 +901,50 @@ const MatrixBackground: React.FC<MatrixBackgroundProps> = ({
       particlesRef.current = [...particlesRef.current, ...newParticles];
     };
 
+    // Mouse move handler for ripples
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!enableMouseRipples || rippleIntensity === 0) return; // Skip if ripples disabled
+
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const now = Date.now();
+
+      // Throttle based on intensity - higher intensity = more frequent ripples
+      const throttleDistance = Math.max(10, 30 - rippleIntensity * 5);
+      const throttleTime = Math.max(20, 100 - rippleIntensity * 20);
+
+      if (lastMousePosRef.current) {
+        const dx = x - lastMousePosRef.current.x;
+        const dy = y - lastMousePosRef.current.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const timeDiff = now - lastMousePosRef.current.time;
+
+        if (distance > throttleDistance || timeDiff > throttleTime) {
+          ripplesRef.current.push({
+            x,
+            y,
+            radius: 0,
+            maxRadius: 150 + rippleIntensity * 50,
+            life: Math.round(50 + rippleIntensity * 10),
+            maxLife: Math.round(50 + rippleIntensity * 10)
+          });
+          lastMousePosRef.current = { x, y, time: now };
+        }
+      } else {
+        lastMousePosRef.current = { x, y, time: now };
+      }
+
+      // Limit number of active ripples based on intensity
+      const maxRipples = Math.round(5 + rippleIntensity * 5);
+      if (ripplesRef.current.length > maxRipples) {
+        ripplesRef.current.shift();
+      }
+    };
+
     // Add click listener
     canvas.addEventListener('click', handleClick);
+    canvas.addEventListener('mousemove', handleMouseMove);
 
     // Add storm event listener
     const handleStormEffect = (event: CustomEvent) => {
@@ -856,7 +955,7 @@ const MatrixBackground: React.FC<MatrixBackgroundProps> = ({
       
       // Handle random effect for storm
       if (effect === 'random') {
-        const effects = ['explosion', 'waterfall', 'crack', 'star', 'fizzle', 'matrix_rain', 'glitch', 'binary', 'cascade', 'square', 'diamond', 'cube', 'octahedron']
+        const effects = ['explosion', 'waterfall', 'crack', 'star', 'fizzle', 'matrix_rain', 'binary', 'cascade', 'square', 'diamond', 'cube', 'octahedron']
         effectToUse = effects[Math.floor(Math.random() * effects.length)] as any
       }
       
@@ -948,10 +1047,11 @@ const MatrixBackground: React.FC<MatrixBackgroundProps> = ({
         clearInterval(intervalRef.current);
       }
       canvas.removeEventListener('click', handleClick);
+      canvas.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('storm-effect', handleStormEffect as EventListener);
     };
-  }, [theme, isAnimationPaused, clickEffect, particleSpeed, particleCount, particleColor, particleLifetime, backgroundMode, backgroundSpeed, backgroundRefreshRate, backgroundColor]); // Add all dependencies
+  }, [theme, isAnimationPaused, clickEffect, particleSpeed, particleCount, particleColor, particleLifetime, backgroundMode, backgroundSpeed, backgroundColor, rippleIntensity, rippleCharacter, rippleParticleLimit, rippleFadeSpeed, rippleFadeFromCenter, enableTrails, enableMouseRipples]); // Add all dependencies
 
   return <canvas ref={canvasRef} className="fixed top-0 left-0 w-full h-full z-0 pointer-events-auto" />;
 };

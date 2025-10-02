@@ -17,7 +17,6 @@ export default function MatrixStormwave() {
   const [mounted, setMounted] = useState(false)
   const [isAnimationPaused, setIsAnimationPaused] = useState(false)
   const [clickEffect, setClickEffect] = useState<'explosion' | 'waterfall' | 'crack' | 'star' | 'fizzle' | 'matrix_rain' | 'glitch' | 'binary' | 'cascade' | 'square' | 'diamond' | 'cube' | 'octahedron' | 'random'>('random')
-  const [alignToGrid, setAlignToGrid] = useState(true)
   const [particleSpeed, setParticleSpeed] = useState(1)
   const [particleCount, setParticleCount] = useState(1)
   const [particleColor, setParticleColor] = useState('#1DD11D')
@@ -25,7 +24,13 @@ export default function MatrixStormwave() {
   const [particleLifetime, setParticleLifetime] = useState(1)
   const [backgroundMode, setBackgroundMode] = useState<'matrix' | 'pulse' | 'sparkle' | 'waves' | 'grid'>('matrix')
   const [backgroundSpeed, setBackgroundSpeed] = useState(1)
-  const [backgroundRefreshRate, setBackgroundRefreshRate] = useState(1)
+  const [rippleIntensity, setRippleIntensity] = useState(1)
+  const [rippleCharacter, setRippleCharacter] = useState('')
+  const [rippleParticleLimit, setRippleParticleLimit] = useState(100)
+  const [rippleFadeSpeed, setRippleFadeSpeed] = useState(0.05)
+  const [rippleFadeFromCenter, setRippleFadeFromCenter] = useState(false)
+  const [enableTrails, setEnableTrails] = useState(true)
+  const [enableMouseRipples, setEnableMouseRipples] = useState(true)
   const [isZenMode, setIsZenMode] = useState(false)
   const [isSettingsCollapsed, setIsSettingsCollapsed] = useState(true)
   
@@ -102,9 +107,10 @@ export default function MatrixStormwave() {
   // Randomize all settings function
   const randomizeSettings = () => {
     const backgroundModes: Array<typeof backgroundMode> = ['matrix', 'pulse', 'sparkle', 'waves', 'grid']
-    const effects: Array<typeof clickEffect> = ['explosion', 'waterfall', 'crack', 'star', 'fizzle', 'matrix_rain', 'glitch', 'binary', 'cascade', 'square', 'diamond', 'cube', 'octahedron', 'random']
+    const effects: Array<typeof clickEffect> = ['explosion', 'waterfall', 'crack', 'star', 'fizzle', 'matrix_rain', 'binary', 'cascade', 'square', 'diamond', 'cube', 'octahedron', 'random']
     const colors = ['#1DD11D', '#FF0080', '#00FFFF', '#FFFF00', '#FF4500', '#9932CC', '#00FF00', '#FF1493']
-    
+    const rippleChars = ['', '~', '≈', 'o', 'O', '*', '•', '∘', 'q', 'x', 'u', '1', '8', '5']
+
     setBackgroundMode(backgroundModes[Math.floor(Math.random() * backgroundModes.length)])
     setClickEffect(effects[Math.floor(Math.random() * effects.length)])
     setParticleSpeed(Number((Math.random() * 2.9 + 0.1).toFixed(1)))
@@ -113,8 +119,11 @@ export default function MatrixStormwave() {
     setBackgroundColor(colors[Math.floor(Math.random() * colors.length)])
     setParticleLifetime(Number((Math.random() * 29.8 + 0.2).toFixed(1)))
     setBackgroundSpeed(Number((Math.random() * 2.9 + 0.1).toFixed(1)))
-    setBackgroundRefreshRate(Number((Math.random() * 2.9 + 0.1).toFixed(1)))
-    setAlignToGrid(Math.random() > 0.5)
+    setRippleIntensity(Number((Math.random() * 3).toFixed(1)))
+    setRippleCharacter(rippleChars[Math.floor(Math.random() * rippleChars.length)])
+    setRippleParticleLimit(Math.round(Math.random() * 490 + 10))
+    setRippleFadeSpeed(Number((Math.random() * 0.49 + 0.01).toFixed(2)))
+    setRippleFadeFromCenter(Math.random() > 0.5)
   }
 
   // Storm generation function
@@ -127,8 +136,8 @@ export default function MatrixStormwave() {
     
     // Pick ONE event type for the entire storm (including 'random')
     const allEffects: Array<typeof clickEffect> = [
-      'explosion', 'waterfall', 'crack', 'star', 'fizzle', 
-      'matrix_rain', 'glitch', 'binary', 'cascade', 
+      'explosion', 'waterfall', 'crack', 'star', 'fizzle',
+      'matrix_rain', 'binary', 'cascade',
       'square', 'diamond', 'cube', 'octahedron', 'random'
     ]
     const chosenEffect = allEffects[Math.floor(Math.random() * allEffects.length)]
@@ -146,18 +155,23 @@ export default function MatrixStormwave() {
   // Separate state for tracking if we should be polling
   return (
     <>
-      <MatrixBackground 
+      <MatrixBackground
         isAnimationPaused={isAnimationPaused}
         clickEffect={clickEffect}
-        alignToGrid={alignToGrid}
         particleSpeed={particleSpeed}
         particleCount={particleCount}
         particleColor={particleColor}
         particleLifetime={particleLifetime}
         backgroundMode={backgroundMode}
         backgroundSpeed={backgroundSpeed}
-        backgroundRefreshRate={backgroundRefreshRate}
         backgroundColor={backgroundColor}
+        rippleIntensity={rippleIntensity}
+        rippleCharacter={rippleCharacter}
+        rippleParticleLimit={rippleParticleLimit}
+        rippleFadeSpeed={rippleFadeSpeed}
+        rippleFadeFromCenter={rippleFadeFromCenter}
+        enableTrails={enableTrails}
+        enableMouseRipples={enableMouseRipples}
       />
       {!isZenMode && (
         <div className="min-h-screen p-4 md:p-8 relative z-10 pointer-events-none">
@@ -247,19 +261,7 @@ export default function MatrixStormwave() {
                   onValueChange={(value) => setBackgroundSpeed(value[0])}
                 />
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="background-refresh">Background Refresh Rate: {backgroundRefreshRate.toFixed(1)}x</Label>
-                <Slider
-                  id="background-refresh"
-                  min={0.1}
-                  max={3}
-                  step={0.1}
-                  value={[backgroundRefreshRate]}
-                  onValueChange={(value) => setBackgroundRefreshRate(value[0])}
-                />
-              </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="particle-speed">Particle Speed: {particleSpeed.toFixed(1)}x</Label>
                 <Slider
@@ -294,6 +296,87 @@ export default function MatrixStormwave() {
                   value={[particleLifetime]}
                   onValueChange={(value) => setParticleLifetime(value[0])}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="ripple-intensity">Mouse Ripple Intensity: {rippleIntensity.toFixed(1)}x</Label>
+                <Slider
+                  id="ripple-intensity"
+                  min={0}
+                  max={3}
+                  step={0.1}
+                  value={[rippleIntensity]}
+                  onValueChange={(value) => setRippleIntensity(value[0])}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="ripple-character">Ripple Character (empty = random)</Label>
+                <Input
+                  type="text"
+                  id="ripple-character"
+                  value={rippleCharacter}
+                  onChange={(e) => setRippleCharacter(e.target.value.slice(0, 1))}
+                  placeholder="Random"
+                  maxLength={1}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="ripple-particle-limit">Ripple Particle Limit: {rippleParticleLimit}</Label>
+                <Slider
+                  id="ripple-particle-limit"
+                  min={10}
+                  max={500}
+                  step={10}
+                  value={[rippleParticleLimit]}
+                  onValueChange={(value) => setRippleParticleLimit(value[0])}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="ripple-fade-speed">Trail Fade Speed: {rippleFadeSpeed.toFixed(2)}</Label>
+                <Slider
+                  id="ripple-fade-speed"
+                  min={0.01}
+                  max={0.5}
+                  step={0.01}
+                  value={[rippleFadeSpeed]}
+                  onValueChange={(value) => setRippleFadeSpeed(value[0])}
+                />
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="ripple-fade-from-center"
+                  checked={rippleFadeFromCenter}
+                  onChange={(e) => setRippleFadeFromCenter(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                />
+                <Label htmlFor="ripple-fade-from-center">Fade ripples from center</Label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="enable-trails"
+                  checked={enableTrails}
+                  onChange={(e) => setEnableTrails(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                />
+                <Label htmlFor="enable-trails">Enable particle trails</Label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="enable-mouse-ripples"
+                  checked={enableMouseRipples}
+                  onChange={(e) => setEnableMouseRipples(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                />
+                <Label htmlFor="enable-mouse-ripples">Enable mouse ripples</Label>
               </div>
 
               <div className="space-y-2">
@@ -336,16 +419,6 @@ export default function MatrixStormwave() {
                 </div>
               </div>
 
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="align-to-grid"
-                  checked={alignToGrid}
-                  onChange={(e) => setAlignToGrid(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                />
-                <Label htmlFor="align-to-grid">Align particles to grid</Label>
-              </div>
               </div>
             )}
           </div>
