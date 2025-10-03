@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Sun, Moon, Play, Pause, Eye, EyeOff, Zap, Shuffle } from "lucide-react"
+import { Sun, Moon, Play, Pause, Eye, EyeOff, Zap, Shuffle, Volume2, VolumeX } from "lucide-react"
 
 interface PageHeaderProps {
   mounted: boolean
@@ -15,9 +15,11 @@ interface PageHeaderProps {
   onRandomizeSettings: () => void
   onStartStorm: () => void
   isStormActive: boolean
+  isMusicMuted: boolean
+  toggleMusicMute: () => void
 }
 
-export function PageHeader({ mounted, isAnimationPaused, toggleAnimation, theme, toggleTheme, isZenMode, toggleZenMode, onRandomizeSettings, onStartStorm, isStormActive }: PageHeaderProps) {
+export function PageHeader({ mounted, isAnimationPaused, toggleAnimation, theme, toggleTheme, isZenMode, toggleZenMode, onRandomizeSettings, onStartStorm, isStormActive, isMusicMuted, toggleMusicMute }: PageHeaderProps) {
   return (
     <div className="text-center">
       <Card className="bg-background/20 backdrop-blur-sm w-fit mx-auto px-4 md:px-8 py-4 md:py-6 select-none pointer-events-auto">
@@ -44,6 +46,9 @@ export function PageHeader({ mounted, isAnimationPaused, toggleAnimation, theme,
             </Button>
             <Button variant="ghost" size="sm" onClick={toggleTheme} className="bg-white/20 hover:bg-white/30 h-8 w-8 md:h-10 md:w-10">
               {theme === "dark" ? <Sun className="h-4 w-4 md:h-5 md:w-5" /> : <Moon className="h-4 w-4 md:h-5 md:w-5" />}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={toggleMusicMute} className="bg-white/20 hover:bg-white/30 h-8 w-8 md:h-10 md:w-10">
+              {isMusicMuted ? <VolumeX className="h-4 w-4 md:h-5 md:w-5" /> : <Volume2 className="h-4 w-4 md:h-5 md:w-5" />}
             </Button>
           </div>
         )}

@@ -1,6 +1,6 @@
 "use client"
 
-import {useEffect, useState} from "react"
+import {useEffect, useState, useRef} from "react"
 import {Slider} from "@/components/ui/slider"
 import {Input} from "@/components/ui/input"
 import {Label} from "@/components/ui/label"
@@ -9,6 +9,8 @@ import {useTheme} from "next-themes"
 import {Eye, ChevronDown, ChevronUp} from "lucide-react"
 import MatrixBackground from "@/components/matrix-background"
 import {PageHeader} from "@/components/page-header"
+import BackgroundAudio, {BackgroundAudioRef} from "@/components/background-audio"
+import {SoundEffectType, SOUND_EFFECT_SYSTEMS, SoundEffectManager} from "@/lib/sound-effects"
 
 
 export default function MatrixStormwave() {
@@ -34,7 +36,21 @@ export default function MatrixStormwave() {
   const [enableMouseRipples, setEnableMouseRipples] = useState(true)
   const [isZenMode, setIsZenMode] = useState(false)
   const [isSettingsCollapsed, setIsSettingsCollapsed] = useState(true)
-  
+
+  // Audio state
+  const audioRef = useRef<BackgroundAudioRef>(null)
+  const [isMusicMuted, setIsMusicMuted] = useState(false)
+  const [soundEffectType, setSoundEffectType] = useState<SoundEffectType>('none')
+  const [soundEffectVolume, setSoundEffectVolume] = useState(0.5)
+  const soundEffectManagerRef = useRef<SoundEffectManager>(new SoundEffectManager())
+
+  // Particle counter
+  const [particleCounts, setParticleCounts] = useState({ total: 0, particles: 0, background: 0, ripples: 0, shapes: 0 })
+  const [fps, setFps] = useState(0)
+  const fpsCounterRef = useRef({ frames: 0, lastTime: Date.now() })
+  const particleHistoryRef = useRef<number[]>([])
+  const [avgParticles, setAvgParticles] = useState(0)
+
   // Storm state
   const [isStormActive, setIsStormActive] = useState(false)
   const [stormDuration, setStormDuration] = useState(0)
@@ -46,6 +62,67 @@ export default function MatrixStormwave() {
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Handle music mute
+  const toggleMusicMute = () => {
+    const newMuted = !isMusicMuted
+    setIsMusicMuted(newMuted)
+    if (audioRef.current) {
+      audioRef.current.setMuted(newMuted)
+    }
+  }
+
+  // Handle sound effect system changes
+  useEffect(() => {
+    const manager = soundEffectManagerRef.current
+    manager.setSystem(soundEffectType)
+    console.log('Sound effect system changed to:', soundEffectType)
+  }, [soundEffectType])
+
+  // Handle sound effect volume changes
+  useEffect(() => {
+    const manager = soundEffectManagerRef.current
+    manager.setVolume(soundEffectVolume)
+  }, [soundEffectVolume])
+
+  // Cleanup sound effects on unmount
+  useEffect(() => {
+    return () => {
+      soundEffectManagerRef.current.cleanup()
+    }
+  }, [])
+
+  // FPS counter
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const counter = fpsCounterRef.current
+      const now = Date.now()
+      const elapsed = now - counter.lastTime
+
+      if (elapsed >= 1000) {
+        setFps(Math.round((counter.frames * 1000) / elapsed))
+        counter.frames = 0
+        counter.lastTime = now
+      }
+    }, 100)
+
+    return () => clearInterval(interval)
+  }, [])
+
+  // Track frames for FPS and rolling average
+  const handleParticleCountChange = (counts: typeof particleCounts) => {
+    setParticleCounts(counts)
+    fpsCounterRef.current.frames++
+
+    // Update rolling average (10 samples = ~0.3 seconds)
+    const history = particleHistoryRef.current
+    history.push(counts.total)
+    if (history.length > 10) {
+      history.shift()
+    }
+    const avg = Math.round(history.reduce((sum, val) => sum + val, 0) / history.length)
+    setAvgParticles(avg)
+  }
 
   // Space key handler to toggle mouse ripples
   useEffect(() => {
@@ -170,6 +247,7 @@ export default function MatrixStormwave() {
   // Separate state for tracking if we should be polling
   return (
     <>
+      <BackgroundAudio ref={audioRef} />
       <MatrixBackground
         isAnimationPaused={isAnimationPaused}
         clickEffect={clickEffect}
@@ -188,6 +266,8 @@ export default function MatrixStormwave() {
         rippleMaxCount={rippleMaxCount}
         enableTrails={enableTrails}
         enableMouseRipples={enableMouseRipples}
+        soundEffectManager={soundEffectManagerRef.current}
+        onParticleCountChange={handleParticleCountChange}
       />
       {!isZenMode && (
         <div className="min-h-screen p-4 md:p-8 relative z-10 pointer-events-none">
@@ -203,10 +283,36 @@ export default function MatrixStormwave() {
             onRandomizeSettings={randomizeSettings}
             onStartStorm={startStorm}
             isStormActive={isStormActive}
+            isMusicMuted={isMusicMuted}
+            toggleMusicMute={toggleMusicMute}
           />
 
-          {/* Keyboard hint */}
-          <div className="text-xs text-muted-foreground/60 text-center pointer-events-none">
+          {/* Particle counter & FPS */}
+          <div className="text-xs text-muted-foreground/80 text-center pointer-events-none bg-background/10 backdrop-blur-sm rounded px-3 py-1.5">
+            <div className="font-mono">
+              <span className={fps < 30 ? "text-red-500 font-bold" : fps < 50 ? "text-yellow-500" : "text-green-500"}>
+                {fps} FPS
+              </span>
+              <span className="mx-2 text-muted-foreground/40">|</span>
+              Total: <span className="font-bold text-foreground">{particleCounts.total}</span>
+              <span className="mx-1 text-muted-foreground/60">(avg: {avgParticles})</span>
+              <span className="mx-2 text-muted-foreground/40">|</span>
+              Events: {particleCounts.particles}
+              <span className="mx-1 text-muted-foreground/40">·</span>
+              BG: {particleCounts.background}
+              <span className="mx-1 text-muted-foreground/40">·</span>
+              Ripples: {particleCounts.ripples}
+              {particleCounts.shapes > 0 && (
+                <>
+                  <span className="mx-1 text-muted-foreground/40">·</span>
+                  3D: {particleCounts.shapes}
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Keyboard hint - desktop only */}
+          <div className="hidden md:block text-xs text-muted-foreground/60 text-center pointer-events-none">
             Press <kbd className="px-1.5 py-0.5 bg-muted/30 rounded border border-muted-foreground/20">Space</kbd> to toggle mouse ripples
           </div>
 
@@ -411,6 +517,36 @@ export default function MatrixStormwave() {
                 />
                 <Label htmlFor="enable-mouse-ripples">Enable mouse ripples</Label>
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="sound-effects">Sound Effects</Label>
+                <select
+                  id="sound-effects"
+                  value={soundEffectType}
+                  onChange={(e) => setSoundEffectType(e.target.value as SoundEffectType)}
+                  className="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                >
+                  {Object.entries(SOUND_EFFECT_SYSTEMS).map(([key, system]) => (
+                    <option key={key} value={key}>
+                      {system.name} - {system.description}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {soundEffectType !== 'none' && (
+                <div className="space-y-2">
+                  <Label htmlFor="sound-effect-volume">Sound Effect Volume: {Math.round(soundEffectVolume * 100)}%</Label>
+                  <Slider
+                    id="sound-effect-volume"
+                    min={0}
+                    max={1}
+                    step={0.1}
+                    value={[soundEffectVolume]}
+                    onValueChange={(value) => setSoundEffectVolume(value[0])}
+                  />
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="particle-color">Particle Color</Label>

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useTheme } from 'next-themes';
+import { SoundEffectManager } from '@/lib/sound-effects';
 
 interface MatrixBackgroundProps {
   isAnimationPaused: boolean;
@@ -21,6 +22,8 @@ interface MatrixBackgroundProps {
   rippleMaxCount?: number;
   enableTrails?: boolean;
   enableMouseRipples?: boolean;
+  soundEffectManager?: SoundEffectManager;
+  onParticleCountChange?: (count: { total: number; particles: number; background: number; ripples: number; shapes: number }) => void;
 }
 
 interface Particle {
@@ -60,7 +63,9 @@ const MatrixBackground: React.FC<MatrixBackgroundProps> = ({
   rippleFadeFromCenter = false,
   rippleMaxCount = 50,
   enableTrails = true,
-  enableMouseRipples = true
+  enableMouseRipples = true,
+  soundEffectManager,
+  onParticleCountChange
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { theme } = useTheme();
@@ -321,9 +326,14 @@ const MatrixBackground: React.FC<MatrixBackgroundProps> = ({
         
         // Update life
         p.life--;
-        
+
         // Remove dead particles
         if (p.life <= 0) {
+          // Notify sound system
+          const system = soundEffectManager?.getCurrentSystem();
+          if (system?.onParticleDestroy) {
+            system.onParticleDestroy(p.x, p.y);
+          }
           particles.splice(i, 1);
         }
       }
@@ -899,6 +909,19 @@ const MatrixBackground: React.FC<MatrixBackgroundProps> = ({
       }
       
       particlesRef.current = [...particlesRef.current, ...newParticles];
+
+      // Trigger sound effects for click
+      const system = soundEffectManager?.getCurrentSystem();
+      if (system?.onClickEvent) {
+        system.onClickEvent(x, y, effectToUse);
+      }
+
+      // Trigger sound effects for each particle created
+      if (system?.onParticleCreate) {
+        newParticles.forEach(p => {
+          system.onParticleCreate!(p.x, p.y, p.vx, p.vy);
+        });
+      }
     };
 
     // Mouse move handler for ripples
@@ -1060,6 +1083,30 @@ const MatrixBackground: React.FC<MatrixBackgroundProps> = ({
       }
       updateParticles();
       drawParticles();
+
+      // Report particle counts
+      if (onParticleCountChange) {
+        const particleCount = particlesRef.current.length;
+        const backgroundCount = backgroundParticlesRef.current.length;
+        // Each ripple creates rippleParticleLimit visual particles
+        const rippleParticleCount = ripplesRef.current.length * rippleParticleLimit;
+        const shapeCount = shape3DRef.current.length;
+        const total = particleCount + backgroundCount + rippleParticleCount + shapeCount;
+
+        onParticleCountChange({
+          total,
+          particles: particleCount,
+          background: backgroundCount,
+          ripples: rippleParticleCount,
+          shapes: shapeCount
+        });
+
+        // Update sound system with total count
+        const system = soundEffectManager?.getCurrentSystem();
+        if (system?.onParticleCountUpdate) {
+          system.onParticleCountUpdate(total);
+        }
+      }
     };
 
     // Start animation with interval like original
