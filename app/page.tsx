@@ -28,7 +28,7 @@ export default function MatrixStormwave() {
   const [backgroundSpeed, setBackgroundSpeed] = useState(1)
   const [rippleIntensity, setRippleIntensity] = useState(1)
   const [rippleCharacter, setRippleCharacter] = useState('')
-  const [rippleParticleLimit, setRippleParticleLimit] = useState(100)
+  const [rippleParticleLimit, setRippleParticleLimit] = useState(20)
   const [rippleFadeSpeed, setRippleFadeSpeed] = useState(0.05)
   const [rippleFadeFromCenter, setRippleFadeFromCenter] = useState(false)
   const [rippleMaxCount, setRippleMaxCount] = useState(50)
