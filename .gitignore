@@ -1,3 +1,5 @@
+dev/
+
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 .idea
 # dependencies
@@ -39,10 +41,6 @@ next-env.d.ts
 CLAUDE.md
 GEMINI.md
 .cursorrules
-
-# AI instruction files (generated)
 .claude
-
-# AI instruction files (generated)
 AGENTS.md
 WARP.md
