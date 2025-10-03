@@ -77,6 +77,51 @@ const MatrixBackground: React.FC<MatrixBackgroundProps> = ({
   const ripplesRef = useRef<{x: number; y: number; radius: number; maxRadius: number; life: number; maxLife: number}[]>([]);
   const lastMousePosRef = useRef<{x: number; y: number; time: number} | null>(null);
 
+  // Store particle creation functions so event handlers can access them
+  const particleCreatorsRef = useRef<{
+    createExplosionParticles?: (x: number, y: number) => Particle[];
+    createWaterfallParticles?: (x: number, y: number) => Particle[];
+    createCrackParticles?: (x: number, y: number) => Particle[];
+    createStarParticles?: (x: number, y: number) => Particle[];
+    createFizzleParticles?: (x: number, y: number) => Particle[];
+    createMatrixRainParticles?: (x: number, y: number) => Particle[];
+    createGlitchParticles?: (x: number, y: number) => Particle[];
+    createBinaryParticles?: (x: number, y: number) => Particle[];
+    createCascadeParticles?: (x: number, y: number) => Particle[];
+    createSquareParticles?: (x: number, y: number) => Particle[];
+    createDiamondParticles?: (x: number, y: number) => Particle[];
+    createCubeParticles?: (x: number, y: number) => Particle[];
+    createOctahedronParticles?: (x: number, y: number) => Particle[];
+  }>({});
+
+  // Store current prop values in refs so event handlers always have latest values
+  const propsRef = useRef({
+    clickEffect,
+    particleSpeed,
+    particleCount,
+    particleLifetime,
+    particleColor,
+    enableMouseRipples,
+    rippleIntensity,
+    rippleMaxCount,
+    soundEffectManager
+  });
+
+  // Update refs when props change
+  useEffect(() => {
+    propsRef.current = {
+      clickEffect,
+      particleSpeed,
+      particleCount,
+      particleLifetime,
+      particleColor,
+      enableMouseRipples,
+      rippleIntensity,
+      rippleMaxCount,
+      soundEffectManager
+    };
+  }, [clickEffect, particleSpeed, particleCount, particleLifetime, particleColor, enableMouseRipples, rippleIntensity, rippleMaxCount, soundEffectManager]);
+
   // Convert hex color to RGB
   const hexToRgb = (hex: string) => {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -86,6 +131,234 @@ const MatrixBackground: React.FC<MatrixBackgroundProps> = ({
       b: parseInt(result[3], 16)
     } : { r: 34, g: 136, b: 34 };
   };
+
+  // Separate effect for event listeners - only runs once
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const handleClick = (e: MouseEvent) => {
+      // Skip if clicking on interactive elements (buttons, inputs, etc.)
+      const target = e.target as HTMLElement;
+      if (target && target !== canvas && target.closest('button, input, select, textarea, a, [role="button"]')) {
+        return;
+      }
+
+      const x = e.clientX;
+      const y = e.clientY;
+
+      let newParticles: Particle[] = [];
+      let effectToUse = propsRef.current.clickEffect;
+
+      // Handle random effect
+      if (propsRef.current.clickEffect === 'random') {
+        const effects = ['explosion', 'waterfall', 'crack', 'star', 'fizzle', 'matrix_rain', 'binary', 'cascade', 'square', 'diamond', 'cube', 'octahedron'];
+        effectToUse = effects[Math.floor(Math.random() * effects.length)] as any;
+      }
+
+      switch (effectToUse) {
+        case 'explosion':
+          newParticles = particleCreatorsRef.current.createExplosionParticles?.(x, y) || [];
+          break;
+        case 'waterfall':
+          newParticles = particleCreatorsRef.current.createWaterfallParticles?.(x, y) || [];
+          break;
+        case 'crack':
+          newParticles = particleCreatorsRef.current.createCrackParticles?.(x, y) || [];
+          break;
+        case 'star':
+          newParticles = particleCreatorsRef.current.createStarParticles?.(x, y) || [];
+          break;
+        case 'fizzle':
+          newParticles = particleCreatorsRef.current.createFizzleParticles?.(x, y) || [];
+          break;
+        case 'matrix_rain':
+          newParticles = particleCreatorsRef.current.createMatrixRainParticles?.(x, y) || [];
+          break;
+        case 'glitch':
+          newParticles = particleCreatorsRef.current.createGlitchParticles?.(x, y) || [];
+          break;
+        case 'binary':
+          newParticles = particleCreatorsRef.current.createBinaryParticles?.(x, y) || [];
+          break;
+        case 'cascade':
+          newParticles = particleCreatorsRef.current.createCascadeParticles?.(x, y) || [];
+          break;
+        case 'square':
+          newParticles = particleCreatorsRef.current.createSquareParticles?.(x, y) || [];
+          break;
+        case 'diamond':
+          newParticles = particleCreatorsRef.current.createDiamondParticles?.(x, y) || [];
+          break;
+        case 'cube':
+          newParticles = particleCreatorsRef.current.createCubeParticles?.(x, y) || [];
+          break;
+        case 'octahedron':
+          newParticles = particleCreatorsRef.current.createOctahedronParticles?.(x, y) || [];
+          break;
+      }
+
+      particlesRef.current = [...particlesRef.current, ...newParticles];
+
+      // Trigger sound effects for click
+      const system = propsRef.current.soundEffectManager?.getCurrentSystem();
+      if (system?.onClickEvent) {
+        system.onClickEvent(x, y, effectToUse);
+      }
+
+      // Trigger sound effects for each particle created
+      if (system?.onParticleCreate) {
+        newParticles.forEach(p => {
+          system.onParticleCreate!(p.x, p.y, p.vx, p.vy);
+        });
+      }
+    };
+
+    // Mouse move handler for ripples
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!propsRef.current.enableMouseRipples || propsRef.current.rippleIntensity === 0) return;
+
+      const x = e.clientX;
+      const y = e.clientY;
+      const now = Date.now();
+
+      const throttleDistance = Math.max(10, 30 - propsRef.current.rippleIntensity * 5);
+      const throttleTime = Math.max(20, 100 - propsRef.current.rippleIntensity * 20);
+
+      if (lastMousePosRef.current) {
+        const dx = x - lastMousePosRef.current.x;
+        const dy = y - lastMousePosRef.current.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const timeDiff = now - lastMousePosRef.current.time;
+
+        if (distance > throttleDistance || timeDiff > throttleTime) {
+          ripplesRef.current.push({
+            x,
+            y,
+            radius: 0,
+            maxRadius: 150 + propsRef.current.rippleIntensity * 50,
+            life: Math.round(50 + propsRef.current.rippleIntensity * 10),
+            maxLife: Math.round(50 + propsRef.current.rippleIntensity * 10)
+          });
+          lastMousePosRef.current = { x, y, time: now };
+        }
+      } else {
+        lastMousePosRef.current = { x, y, time: now };
+      }
+
+      if (ripplesRef.current.length > propsRef.current.rippleMaxCount) {
+        ripplesRef.current.shift();
+      }
+    };
+
+    // Touch move handler for mobile ripples
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!propsRef.current.enableMouseRipples || propsRef.current.rippleIntensity === 0) return;
+
+      const touch = e.touches[0];
+      const x = touch.clientX;
+      const y = touch.clientY;
+      const now = Date.now();
+
+      const throttleDistance = Math.max(10, 30 - propsRef.current.rippleIntensity * 5);
+      const throttleTime = Math.max(20, 100 - propsRef.current.rippleIntensity * 20);
+
+      if (lastMousePosRef.current) {
+        const dx = x - lastMousePosRef.current.x;
+        const dy = y - lastMousePosRef.current.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const timeDiff = now - lastMousePosRef.current.time;
+
+        if (distance > throttleDistance || timeDiff > throttleTime) {
+          ripplesRef.current.push({
+            x,
+            y,
+            radius: 0,
+            maxRadius: 150 + propsRef.current.rippleIntensity * 50,
+            life: Math.round(50 + propsRef.current.rippleIntensity * 10),
+            maxLife: Math.round(50 + propsRef.current.rippleIntensity * 10)
+          });
+          lastMousePosRef.current = { x, y, time: now };
+        }
+      } else {
+        lastMousePosRef.current = { x, y, time: now };
+      }
+
+      if (ripplesRef.current.length > propsRef.current.rippleMaxCount) {
+        ripplesRef.current.shift();
+      }
+    };
+
+    // Storm event handler
+    const handleStormEffect = (event: CustomEvent) => {
+      const { x, y, effect } = event.detail
+
+      let newParticles: Particle[] = []
+      let effectToUse = effect
+
+      if (effect === 'random') {
+        const effects = ['explosion', 'waterfall', 'crack', 'star', 'fizzle', 'matrix_rain', 'binary', 'cascade', 'square', 'diamond', 'cube', 'octahedron']
+        effectToUse = effects[Math.floor(Math.random() * effects.length)] as any
+      }
+
+      switch (effectToUse) {
+        case 'explosion':
+          newParticles = particleCreatorsRef.current.createExplosionParticles?.(x, y) || []
+          break
+        case 'waterfall':
+          newParticles = particleCreatorsRef.current.createWaterfallParticles?.(x, y) || []
+          break
+        case 'crack':
+          newParticles = particleCreatorsRef.current.createCrackParticles?.(x, y) || []
+          break
+        case 'star':
+          newParticles = particleCreatorsRef.current.createStarParticles?.(x, y) || []
+          break
+        case 'fizzle':
+          newParticles = particleCreatorsRef.current.createFizzleParticles?.(x, y) || []
+          break
+        case 'matrix_rain':
+          newParticles = particleCreatorsRef.current.createMatrixRainParticles?.(x, y) || []
+          break
+        case 'glitch':
+          newParticles = particleCreatorsRef.current.createGlitchParticles?.(x, y) || []
+          break
+        case 'binary':
+          newParticles = particleCreatorsRef.current.createBinaryParticles?.(x, y) || []
+          break
+        case 'cascade':
+          newParticles = particleCreatorsRef.current.createCascadeParticles?.(x, y) || []
+          break
+        case 'square':
+          newParticles = particleCreatorsRef.current.createSquareParticles?.(x, y) || []
+          break
+        case 'diamond':
+          newParticles = particleCreatorsRef.current.createDiamondParticles?.(x, y) || []
+          break
+        case 'cube':
+          newParticles = particleCreatorsRef.current.createCubeParticles?.(x, y) || []
+          break
+        case 'octahedron':
+          newParticles = particleCreatorsRef.current.createOctahedronParticles?.(x, y) || []
+          break
+      }
+
+      particlesRef.current = [...particlesRef.current, ...newParticles]
+    }
+
+    // Attach listeners to window instead of canvas to avoid pointer-events issues
+    window.addEventListener('click', handleClick);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('touchmove', handleTouchMove, { passive: true });
+    window.addEventListener('storm-effect', handleStormEffect as EventListener);
+
+    return () => {
+      window.removeEventListener('click', handleClick);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('storm-effect', handleStormEffect as EventListener);
+    };
+  }, []); // Empty dependency array - only mount/unmount
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -852,223 +1125,22 @@ const MatrixBackground: React.FC<MatrixBackgroundProps> = ({
       return particles;
     };
 
-    const handleClick = (e: MouseEvent) => {
-      const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      
-      let newParticles: Particle[] = [];
-      let effectToUse = clickEffect;
-      
-      // Handle random effect
-      if (clickEffect === 'random') {
-        const effects = ['explosion', 'waterfall', 'crack', 'star', 'fizzle', 'matrix_rain', 'binary', 'cascade', 'square', 'diamond', 'cube', 'octahedron'];
-        effectToUse = effects[Math.floor(Math.random() * effects.length)] as any;
-      }
-      
-      switch (effectToUse) {
-        case 'explosion':
-          newParticles = createExplosionParticles(x, y);
-          break;
-        case 'waterfall':
-          newParticles = createWaterfallParticles(x, y);
-          break;
-        case 'crack':
-          newParticles = createCrackParticles(x, y);
-          break;
-        case 'star':
-          newParticles = createStarParticles(x, y);
-          break;
-        case 'fizzle':
-          newParticles = createFizzleParticles(x, y);
-          break;
-        case 'matrix_rain':
-          newParticles = createMatrixRainParticles(x, y);
-          break;
-        case 'glitch':
-          newParticles = createGlitchParticles(x, y);
-          break;
-        case 'binary':
-          newParticles = createBinaryParticles(x, y);
-          break;
-        case 'cascade':
-          newParticles = createCascadeParticles(x, y);
-          break;
-        case 'square':
-          newParticles = createSquareParticles(x, y);
-          break;
-        case 'diamond':
-          newParticles = createDiamondParticles(x, y);
-          break;
-        case 'cube':
-          newParticles = createCubeParticles(x, y);
-          break;
-        case 'octahedron':
-          newParticles = createOctahedronParticles(x, y);
-          break;
-      }
-      
-      particlesRef.current = [...particlesRef.current, ...newParticles];
-
-      // Trigger sound effects for click
-      const system = soundEffectManager?.getCurrentSystem();
-      if (system?.onClickEvent) {
-        system.onClickEvent(x, y, effectToUse);
-      }
-
-      // Trigger sound effects for each particle created
-      if (system?.onParticleCreate) {
-        newParticles.forEach(p => {
-          system.onParticleCreate!(p.x, p.y, p.vx, p.vy);
-        });
-      }
+    // Store all particle creator functions in ref for event handlers to access
+    particleCreatorsRef.current = {
+      createExplosionParticles,
+      createWaterfallParticles,
+      createCrackParticles,
+      createStarParticles,
+      createFizzleParticles,
+      createMatrixRainParticles,
+      createGlitchParticles,
+      createBinaryParticles,
+      createCascadeParticles,
+      createSquareParticles,
+      createDiamondParticles,
+      createCubeParticles,
+      createOctahedronParticles
     };
-
-    // Mouse move handler for ripples
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!enableMouseRipples || rippleIntensity === 0) return; // Skip if ripples disabled
-
-      const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      const now = Date.now();
-
-      // Throttle based on intensity - higher intensity = more frequent ripples
-      const throttleDistance = Math.max(10, 30 - rippleIntensity * 5);
-      const throttleTime = Math.max(20, 100 - rippleIntensity * 20);
-
-      if (lastMousePosRef.current) {
-        const dx = x - lastMousePosRef.current.x;
-        const dy = y - lastMousePosRef.current.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        const timeDiff = now - lastMousePosRef.current.time;
-
-        if (distance > throttleDistance || timeDiff > throttleTime) {
-          ripplesRef.current.push({
-            x,
-            y,
-            radius: 0,
-            maxRadius: 150 + rippleIntensity * 50,
-            life: Math.round(50 + rippleIntensity * 10),
-            maxLife: Math.round(50 + rippleIntensity * 10)
-          });
-          lastMousePosRef.current = { x, y, time: now };
-        }
-      } else {
-        lastMousePosRef.current = { x, y, time: now };
-      }
-
-      // Limit number of active ripples
-      if (ripplesRef.current.length > rippleMaxCount) {
-        ripplesRef.current.shift();
-      }
-    };
-
-    // Touch move handler for mobile ripples
-    const handleTouchMove = (e: TouchEvent) => {
-      if (!enableMouseRipples || rippleIntensity === 0) return;
-
-      e.preventDefault();
-      const touch = e.touches[0];
-      const rect = canvas.getBoundingClientRect();
-      const x = touch.clientX - rect.left;
-      const y = touch.clientY - rect.top;
-      const now = Date.now();
-
-      const throttleDistance = Math.max(10, 30 - rippleIntensity * 5);
-      const throttleTime = Math.max(20, 100 - rippleIntensity * 20);
-
-      if (lastMousePosRef.current) {
-        const dx = x - lastMousePosRef.current.x;
-        const dy = y - lastMousePosRef.current.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        const timeDiff = now - lastMousePosRef.current.time;
-
-        if (distance > throttleDistance || timeDiff > throttleTime) {
-          ripplesRef.current.push({
-            x,
-            y,
-            radius: 0,
-            maxRadius: 150 + rippleIntensity * 50,
-            life: Math.round(50 + rippleIntensity * 10),
-            maxLife: Math.round(50 + rippleIntensity * 10)
-          });
-          lastMousePosRef.current = { x, y, time: now };
-        }
-      } else {
-        lastMousePosRef.current = { x, y, time: now };
-      }
-
-      if (ripplesRef.current.length > rippleMaxCount) {
-        ripplesRef.current.shift();
-      }
-    };
-
-    // Add click listener
-    canvas.addEventListener('click', handleClick);
-    canvas.addEventListener('mousemove', handleMouseMove);
-    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
-
-    // Add storm event listener
-    const handleStormEffect = (event: CustomEvent) => {
-      const { x, y, effect } = event.detail
-      
-      let newParticles: Particle[] = []
-      let effectToUse = effect
-      
-      // Handle random effect for storm
-      if (effect === 'random') {
-        const effects = ['explosion', 'waterfall', 'crack', 'star', 'fizzle', 'matrix_rain', 'binary', 'cascade', 'square', 'diamond', 'cube', 'octahedron']
-        effectToUse = effects[Math.floor(Math.random() * effects.length)] as any
-      }
-      
-      // Use the same effect creation logic as handleClick
-      switch (effectToUse) {
-        case 'explosion':
-          newParticles = createExplosionParticles(x, y)
-          break
-        case 'waterfall':
-          newParticles = createWaterfallParticles(x, y)
-          break
-        case 'crack':
-          newParticles = createCrackParticles(x, y)
-          break
-        case 'star':
-          newParticles = createStarParticles(x, y)
-          break
-        case 'fizzle':
-          newParticles = createFizzleParticles(x, y)
-          break
-        case 'matrix_rain':
-          newParticles = createMatrixRainParticles(x, y)
-          break
-        case 'glitch':
-          newParticles = createGlitchParticles(x, y)
-          break
-        case 'binary':
-          newParticles = createBinaryParticles(x, y)
-          break
-        case 'cascade':
-          newParticles = createCascadeParticles(x, y)
-          break
-        case 'square':
-          newParticles = createSquareParticles(x, y)
-          break
-        case 'diamond':
-          newParticles = createDiamondParticles(x, y)
-          break
-        case 'cube':
-          newParticles = createCubeParticles(x, y)
-          break
-        case 'octahedron':
-          newParticles = createOctahedronParticles(x, y)
-          break
-      }
-      
-      particlesRef.current = [...particlesRef.current, ...newParticles]
-    }
-    
-    window.addEventListener('storm-effect', handleStormEffect as EventListener);
 
     // Clear any existing interval
     if (intervalRef.current) {
@@ -1133,15 +1205,11 @@ const MatrixBackground: React.FC<MatrixBackgroundProps> = ({
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
-      canvas.removeEventListener('click', handleClick);
-      canvas.removeEventListener('mousemove', handleMouseMove);
-      canvas.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('resize', handleResize);
-      window.removeEventListener('storm-effect', handleStormEffect as EventListener);
     };
   }, [theme, isAnimationPaused, clickEffect, particleSpeed, particleCount, particleColor, particleLifetime, backgroundMode, backgroundSpeed, backgroundColor, rippleIntensity, rippleCharacter, rippleParticleLimit, rippleFadeSpeed, rippleFadeFromCenter, rippleMaxCount, enableTrails, enableMouseRipples]); // Add all dependencies
 
-  return <canvas ref={canvasRef} className="fixed top-0 left-0 w-full h-full z-0 pointer-events-auto" />;
+  return <canvas ref={canvasRef} className="fixed top-0 left-0 w-full h-full z-0 pointer-events-none" />;
 };
 
 export default MatrixBackground;

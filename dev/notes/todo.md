@@ -1,6 +1,7 @@
 # Todo
-- [ ] Bugfix: Our system lags heavily when cursor moves in / out of the active zone
-- [ ] started lagging more with new audio effects
+- [x] Bugfix: Our system lags heavily when cursor moves in / out of the active zone
+  - [x] started lagging more with new audio effects
+- [ ] Try adding keyboard sound effects
 
 
 

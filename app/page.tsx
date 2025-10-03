@@ -320,7 +320,7 @@ export default function MatrixStormwave() {
           )}
 
           {/* Keyboard hints - desktop only */}
-          <div className="hidden md:block text-xs text-muted-foreground/60 text-center pointer-events-none">
+          <div className="hidden md:block text-xs text-muted-foreground/60 text-center pointer-events-none select-none">
             Press <kbd className="px-1.5 py-0.5 bg-muted/30 rounded border border-muted-foreground/20">Space</kbd> to toggle mouse ripples
             {' · '}
             <kbd className="px-1.5 py-0.5 bg-muted/30 rounded border border-muted-foreground/20">S</kbd> to toggle stats
