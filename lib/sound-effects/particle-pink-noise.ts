@@ -79,10 +79,15 @@ export class ParticlePinkNoise implements SoundEffectSystem {
     if (this.particleHistory.length === 0) return
 
     const avg = this.particleHistory.reduce((s, v) => s + v, 0) / this.particleHistory.length
-    const normalized = Math.min(avg / 2000, 1)
-    const masterVolume = volume ?? 0.5
-    const targetGain = normalized * masterVolume * 0.25
+    if (!isFinite(avg)) return
 
+    const normalized = Math.min(avg / 2000, 1)
+    if (!isFinite(normalized)) return
+
+    const masterVolume = volume ?? 0.5
+    if (!isFinite(masterVolume)) return
+
+    const targetGain = normalized * masterVolume * 0.25
     if (!isFinite(targetGain)) return
 
     this.gainNode.gain.setTargetAtTime(targetGain, this.audioContext.currentTime, 0.05)

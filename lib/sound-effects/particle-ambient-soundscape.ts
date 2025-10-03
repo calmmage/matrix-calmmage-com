@@ -143,12 +143,16 @@ export class ParticleAmbientSoundscape implements SoundEffectSystem {
 
     // Use average particle count for smoother response
     // Scale: 0-2000 particles → 0-1 volume
+    if (!isFinite(this.averageParticleCount)) return
+
     const normalizedCount = Math.min(this.averageParticleCount / 2000, 1)
+    if (!isFinite(normalizedCount)) return
 
     // Apply volume control (default to current volume if not provided)
     const masterVolume = volume ?? 0.5
-    const targetGain = normalizedCount * masterVolume * 0.2
+    if (!isFinite(masterVolume)) return
 
+    const targetGain = normalizedCount * masterVolume * 0.2
     if (!isFinite(targetGain)) return
 
     this.gainNode.gain.setTargetAtTime(targetGain, this.audioContext.currentTime, 0.05)
