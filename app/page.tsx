@@ -29,6 +29,7 @@ export default function MatrixStormwave() {
   const [rippleParticleLimit, setRippleParticleLimit] = useState(100)
   const [rippleFadeSpeed, setRippleFadeSpeed] = useState(0.05)
   const [rippleFadeFromCenter, setRippleFadeFromCenter] = useState(false)
+  const [rippleMaxCount, setRippleMaxCount] = useState(50)
   const [enableTrails, setEnableTrails] = useState(true)
   const [enableMouseRipples, setEnableMouseRipples] = useState(true)
   const [isZenMode, setIsZenMode] = useState(false)
@@ -44,6 +45,19 @@ export default function MatrixStormwave() {
 
   useEffect(() => {
     setMounted(true)
+  }, [])
+
+  // Space key handler to toggle mouse ripples
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.code === 'Space' && e.target === document.body) {
+        e.preventDefault()
+        setEnableMouseRipples(prev => !prev)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyPress)
+    return () => window.removeEventListener('keydown', handleKeyPress)
   }, [])
 
   // Auto-adjust particle and background colors based on theme
@@ -124,6 +138,7 @@ export default function MatrixStormwave() {
     setRippleParticleLimit(Math.round(Math.random() * 490 + 10))
     setRippleFadeSpeed(Number((Math.random() * 0.49 + 0.01).toFixed(2)))
     setRippleFadeFromCenter(Math.random() > 0.5)
+    setRippleMaxCount(Math.round(Math.random() * 150 + 10))
   }
 
   // Storm generation function
@@ -170,6 +185,7 @@ export default function MatrixStormwave() {
         rippleParticleLimit={rippleParticleLimit}
         rippleFadeSpeed={rippleFadeSpeed}
         rippleFadeFromCenter={rippleFadeFromCenter}
+        rippleMaxCount={rippleMaxCount}
         enableTrails={enableTrails}
         enableMouseRipples={enableMouseRipples}
       />
@@ -188,6 +204,11 @@ export default function MatrixStormwave() {
             onStartStorm={startStorm}
             isStormActive={isStormActive}
           />
+
+          {/* Keyboard hint */}
+          <div className="text-xs text-muted-foreground/60 text-center pointer-events-none">
+            Press <kbd className="px-1.5 py-0.5 bg-muted/30 rounded border border-muted-foreground/20">Space</kbd> to toggle mouse ripples
+          </div>
 
           {/* Collapsible Settings - centered below header */}
           <div className="w-full max-w-sm md:max-w-xs bg-background/20 backdrop-blur-sm rounded-lg p-3 md:p-4 pointer-events-auto shadow-2">
@@ -343,6 +364,18 @@ export default function MatrixStormwave() {
                   step={0.01}
                   value={[rippleFadeSpeed]}
                   onValueChange={(value) => setRippleFadeSpeed(value[0])}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="ripple-max-count">Max Simultaneous Ripples: {rippleMaxCount}</Label>
+                <Slider
+                  id="ripple-max-count"
+                  min={5}
+                  max={200}
+                  step={5}
+                  value={[rippleMaxCount]}
+                  onValueChange={(value) => setRippleMaxCount(value[0])}
                 />
               </div>
 

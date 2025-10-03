@@ -18,6 +18,7 @@ interface MatrixBackgroundProps {
   rippleParticleLimit?: number;
   rippleFadeSpeed?: number;
   rippleFadeFromCenter?: boolean;
+  rippleMaxCount?: number;
   enableTrails?: boolean;
   enableMouseRipples?: boolean;
 }
@@ -57,6 +58,7 @@ const MatrixBackground: React.FC<MatrixBackgroundProps> = ({
   rippleParticleLimit = 100,
   rippleFadeSpeed = 0.05,
   rippleFadeFromCenter = false,
+  rippleMaxCount = 50,
   enableTrails = true,
   enableMouseRipples = true
 }) => {
@@ -152,10 +154,8 @@ const MatrixBackground: React.FC<MatrixBackgroundProps> = ({
         ripple.life--;
         ripple.radius += 2 * rippleIntensity;
 
-        // Each ripple gets its own particle budget from the limit
-        // Older ripples (higher index after reverse iteration) get priority
-        const baseParticlesPerRipple = Math.round(30 * rippleIntensity);
-        const particlesPerRipple = Math.min(baseParticlesPerRipple, rippleParticleLimit);
+        // Use rippleParticleLimit directly to control particle count per ripple
+        const particlesPerRipple = rippleParticleLimit;
         const timeAlpha = ripple.life / ripple.maxLife;
 
         for (let j = 0; j < particlesPerRipple; j++) {
@@ -935,9 +935,48 @@ const MatrixBackground: React.FC<MatrixBackgroundProps> = ({
         lastMousePosRef.current = { x, y, time: now };
       }
 
-      // Limit number of active ripples based on intensity
-      const maxRipples = Math.round(5 + rippleIntensity * 5);
-      if (ripplesRef.current.length > maxRipples) {
+      // Limit number of active ripples
+      if (ripplesRef.current.length > rippleMaxCount) {
+        ripplesRef.current.shift();
+      }
+    };
+
+    // Touch move handler for mobile ripples
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!enableMouseRipples || rippleIntensity === 0) return;
+
+      e.preventDefault();
+      const touch = e.touches[0];
+      const rect = canvas.getBoundingClientRect();
+      const x = touch.clientX - rect.left;
+      const y = touch.clientY - rect.top;
+      const now = Date.now();
+
+      const throttleDistance = Math.max(10, 30 - rippleIntensity * 5);
+      const throttleTime = Math.max(20, 100 - rippleIntensity * 20);
+
+      if (lastMousePosRef.current) {
+        const dx = x - lastMousePosRef.current.x;
+        const dy = y - lastMousePosRef.current.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const timeDiff = now - lastMousePosRef.current.time;
+
+        if (distance > throttleDistance || timeDiff > throttleTime) {
+          ripplesRef.current.push({
+            x,
+            y,
+            radius: 0,
+            maxRadius: 150 + rippleIntensity * 50,
+            life: Math.round(50 + rippleIntensity * 10),
+            maxLife: Math.round(50 + rippleIntensity * 10)
+          });
+          lastMousePosRef.current = { x, y, time: now };
+        }
+      } else {
+        lastMousePosRef.current = { x, y, time: now };
+      }
+
+      if (ripplesRef.current.length > rippleMaxCount) {
         ripplesRef.current.shift();
       }
     };
@@ -945,6 +984,7 @@ const MatrixBackground: React.FC<MatrixBackgroundProps> = ({
     // Add click listener
     canvas.addEventListener('click', handleClick);
     canvas.addEventListener('mousemove', handleMouseMove);
+    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
 
     // Add storm event listener
     const handleStormEffect = (event: CustomEvent) => {
@@ -1048,10 +1088,11 @@ const MatrixBackground: React.FC<MatrixBackgroundProps> = ({
       }
       canvas.removeEventListener('click', handleClick);
       canvas.removeEventListener('mousemove', handleMouseMove);
+      canvas.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('storm-effect', handleStormEffect as EventListener);
     };
-  }, [theme, isAnimationPaused, clickEffect, particleSpeed, particleCount, particleColor, particleLifetime, backgroundMode, backgroundSpeed, backgroundColor, rippleIntensity, rippleCharacter, rippleParticleLimit, rippleFadeSpeed, rippleFadeFromCenter, enableTrails, enableMouseRipples]); // Add all dependencies
+  }, [theme, isAnimationPaused, clickEffect, particleSpeed, particleCount, particleColor, particleLifetime, backgroundMode, backgroundSpeed, backgroundColor, rippleIntensity, rippleCharacter, rippleParticleLimit, rippleFadeSpeed, rippleFadeFromCenter, rippleMaxCount, enableTrails, enableMouseRipples]); // Add all dependencies
 
   return <canvas ref={canvasRef} className="fixed top-0 left-0 w-full h-full z-0 pointer-events-auto" />;
 };

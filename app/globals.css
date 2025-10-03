@@ -119,7 +119,13 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html,
   body {
     @apply text-foreground;
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
   }
 }
