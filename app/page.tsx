@@ -50,6 +50,7 @@ export default function MatrixStormwave() {
   const fpsCounterRef = useRef({ frames: 0, lastTime: Date.now() })
   const particleHistoryRef = useRef<number[]>([])
   const [avgParticles, setAvgParticles] = useState(0)
+  const [showStats, setShowStats] = useState(false)
 
   // Storm state
   const [isStormActive, setIsStormActive] = useState(false)
@@ -124,12 +125,17 @@ export default function MatrixStormwave() {
     setAvgParticles(avg)
   }
 
-  // Space key handler to toggle mouse ripples
+  // Keyboard handlers
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.code === 'Space' && e.target === document.body) {
+      if (e.target !== document.body) return
+
+      if (e.code === 'Space') {
         e.preventDefault()
         setEnableMouseRipples(prev => !prev)
+      } else if (e.code === 'KeyS') {
+        e.preventDefault()
+        setShowStats(prev => !prev)
       }
     }
 
@@ -287,33 +293,37 @@ export default function MatrixStormwave() {
             toggleMusicMute={toggleMusicMute}
           />
 
-          {/* Particle counter & FPS */}
-          <div className="text-xs text-muted-foreground/80 text-center pointer-events-none bg-background/10 backdrop-blur-sm rounded px-3 py-1.5">
-            <div className="font-mono">
-              <span className={fps < 30 ? "text-red-500 font-bold" : fps < 50 ? "text-yellow-500" : "text-green-500"}>
-                {fps} FPS
-              </span>
-              <span className="mx-2 text-muted-foreground/40">|</span>
-              Total: <span className="font-bold text-foreground">{particleCounts.total}</span>
-              <span className="mx-1 text-muted-foreground/60">(avg: {avgParticles})</span>
-              <span className="mx-2 text-muted-foreground/40">|</span>
-              Events: {particleCounts.particles}
-              <span className="mx-1 text-muted-foreground/40">·</span>
-              BG: {particleCounts.background}
-              <span className="mx-1 text-muted-foreground/40">·</span>
-              Ripples: {particleCounts.ripples}
-              {particleCounts.shapes > 0 && (
-                <>
-                  <span className="mx-1 text-muted-foreground/40">·</span>
-                  3D: {particleCounts.shapes}
-                </>
-              )}
+          {/* Particle counter & FPS - toggle with 'S' key */}
+          {showStats && (
+            <div className="text-xs text-muted-foreground/80 text-center pointer-events-none bg-background/10 backdrop-blur-sm rounded px-3 py-1.5">
+              <div className="font-mono">
+                <span className={fps < 30 ? "text-red-500 font-bold" : fps < 50 ? "text-yellow-500" : "text-green-500"}>
+                  {fps} FPS
+                </span>
+                <span className="mx-2 text-muted-foreground/40">|</span>
+                Total: <span className="font-bold text-foreground">{particleCounts.total}</span>
+                <span className="mx-1 text-muted-foreground/60">(avg: {avgParticles})</span>
+                <span className="mx-2 text-muted-foreground/40">|</span>
+                Events: {particleCounts.particles}
+                <span className="mx-1 text-muted-foreground/40">·</span>
+                BG: {particleCounts.background}
+                <span className="mx-1 text-muted-foreground/40">·</span>
+                Ripples: {particleCounts.ripples}
+                {particleCounts.shapes > 0 && (
+                  <>
+                    <span className="mx-1 text-muted-foreground/40">·</span>
+                    3D: {particleCounts.shapes}
+                  </>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Keyboard hint - desktop only */}
+          {/* Keyboard hints - desktop only */}
           <div className="hidden md:block text-xs text-muted-foreground/60 text-center pointer-events-none">
             Press <kbd className="px-1.5 py-0.5 bg-muted/30 rounded border border-muted-foreground/20">Space</kbd> to toggle mouse ripples
+            {' · '}
+            <kbd className="px-1.5 py-0.5 bg-muted/30 rounded border border-muted-foreground/20">S</kbd> to toggle stats
           </div>
 
           {/* Collapsible Settings - centered below header */}
@@ -453,9 +463,9 @@ export default function MatrixStormwave() {
                 <Label htmlFor="ripple-particle-limit">Ripple Particle Limit: {rippleParticleLimit}</Label>
                 <Slider
                   id="ripple-particle-limit"
-                  min={10}
-                  max={500}
-                  step={10}
+                  min={1}
+                  max={50}
+                  step={1}
                   value={[rippleParticleLimit]}
                   onValueChange={(value) => setRippleParticleLimit(value[0])}
                 />
