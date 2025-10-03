@@ -1,0 +1,19 @@
+{
+  "name": "toroid3d",
+  "short_name": "toroid3d",
+  "icons": [
+    {
+      "src": "/toroid3d/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/toroid3d/icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#000000",
+  "background_color": "transparent",
+  "display": "standalone"
+}
