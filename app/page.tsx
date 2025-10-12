@@ -11,6 +11,17 @@ import MatrixBackground from "@/components/matrix-background"
 import {PageHeader} from "@/components/page-header"
 import BackgroundAudio, {BackgroundAudioRef} from "@/components/background-audio"
 import {SoundEffectType, SOUND_EFFECT_SYSTEMS, SoundEffectManager} from "@/lib/sound-effects"
+import {
+  PerformanceMode,
+  PERFORMANCE_PRESETS,
+  PERFORMANCE_MODE_DESCRIPTIONS,
+  clampToPreset,
+  randomInPreset,
+  getRandomAllowedEffect,
+  getRandomAllowedBackgroundMode,
+  isEffectAllowed,
+  isBackgroundModeAllowed
+} from "@/lib/performance-presets"
 
 
 export default function MatrixStormwave() {
@@ -18,6 +29,7 @@ export default function MatrixStormwave() {
 
   const [mounted, setMounted] = useState(false)
   const [isAnimationPaused, setIsAnimationPaused] = useState(false)
+  const [performanceMode, setPerformanceMode] = useState<PerformanceMode>('high')
   const [clickEffect, setClickEffect] = useState<'explosion' | 'waterfall' | 'crack' | 'star' | 'fizzle' | 'matrix_rain' | 'glitch' | 'binary' | 'cascade' | 'square' | 'diamond' | 'cube' | 'octahedron' | 'random'>('random')
   const [particleSpeed, setParticleSpeed] = useState(1)
   const [particleCount, setParticleCount] = useState(1)
@@ -155,6 +167,14 @@ export default function MatrixStormwave() {
     }
   }, [theme, mounted])
 
+  // Apply performance mode constraints and randomize settings on mode change
+  useEffect(() => {
+    if (!mounted) return // Don't run on initial mount
+
+    // When performance mode changes, randomize all settings within the new limits
+    randomizeSettings()
+  }, [performanceMode]) // Only run when performance mode changes
+
   // Storm effect useEffect
   useEffect(() => {
     if (!isStormActive) return
@@ -203,25 +223,27 @@ export default function MatrixStormwave() {
 
   // Randomize all settings function
   const randomizeSettings = () => {
-    const backgroundModes: Array<typeof backgroundMode> = ['matrix', 'pulse', 'sparkle', 'waves', 'grid']
-    const effects: Array<typeof clickEffect> = ['explosion', 'waterfall', 'crack', 'star', 'fizzle', 'matrix_rain', 'binary', 'cascade', 'square', 'diamond', 'cube', 'octahedron', 'random']
+    const preset = PERFORMANCE_PRESETS[performanceMode]
     const colors = ['#1DD11D', '#FF0080', '#00FFFF', '#FFFF00', '#FF4500', '#9932CC', '#00FF00', '#FF1493']
     const rippleChars = ['', '~', '≈', 'o', 'O', '*', '•', '∘', 'q', 'x', 'u', '1', '8', '5']
 
-    setBackgroundMode(backgroundModes[Math.floor(Math.random() * backgroundModes.length)])
-    setClickEffect(effects[Math.floor(Math.random() * effects.length)])
+    // Use only allowed background modes and effects for current performance mode
+    setBackgroundMode(getRandomAllowedBackgroundMode(performanceMode) as any)
+    setClickEffect(getRandomAllowedEffect(performanceMode) as any)
+
+    // Randomize within performance mode limits
     setParticleSpeed(Number((Math.random() * 2.9 + 0.1).toFixed(1)))
-    setParticleCount(Number((Math.random() * 2.5 + 0.5).toFixed(1)))
+    setParticleCount(randomInPreset(preset.particleCount.min, preset.particleCount.max, 1))
     setParticleColor(colors[Math.floor(Math.random() * colors.length)])
     setBackgroundColor(colors[Math.floor(Math.random() * colors.length)])
-    setParticleLifetime(Number((Math.random() * 29.8 + 0.2).toFixed(1)))
+    setParticleLifetime(randomInPreset(preset.particleLifetime.min, preset.particleLifetime.max, 1))
     setBackgroundSpeed(Number((Math.random() * 2.9 + 0.1).toFixed(1)))
     setRippleIntensity(Number((Math.random() * 3).toFixed(1)))
     setRippleCharacter(rippleChars[Math.floor(Math.random() * rippleChars.length)])
-    setRippleParticleLimit(Math.round(Math.random() * 490 + 10))
+    setRippleParticleLimit(Math.round(randomInPreset(preset.rippleParticleLimit.min, preset.rippleParticleLimit.max, 0)))
     setRippleFadeSpeed(Number((Math.random() * 0.49 + 0.01).toFixed(2)))
     setRippleFadeFromCenter(Math.random() > 0.5)
-    setRippleMaxCount(Math.round(Math.random() * 150 + 10))
+    setRippleMaxCount(Math.round(randomInPreset(preset.rippleMaxCount.min, preset.rippleMaxCount.max, 0)))
   }
 
   // Storm generation function
@@ -340,6 +362,24 @@ export default function MatrixStormwave() {
             </div>
             {!isSettingsCollapsed && (
               <div className="space-y-3 text-sm md:text-sm text-foreground max-h-[60vh] overflow-y-auto overscroll-contain">
+              {/* Performance Mode Selector */}
+              <div className="space-y-2 pb-3 border-b border-muted-foreground/20">
+                <Label htmlFor="performance-mode" className="font-semibold">Performance Mode</Label>
+                <select
+                  id="performance-mode"
+                  value={performanceMode}
+                  onChange={(e) => setPerformanceMode(e.target.value as PerformanceMode)}
+                  className="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm font-medium"
+                >
+                  <option value="high">High - {PERFORMANCE_MODE_DESCRIPTIONS.high}</option>
+                  <option value="medium">Medium - {PERFORMANCE_MODE_DESCRIPTIONS.medium}</option>
+                  <option value="low">Low - {PERFORMANCE_MODE_DESCRIPTIONS.low}</option>
+                </select>
+                <p className="text-xs text-muted-foreground">
+                  Limits particle counts and effects for smoother performance
+                </p>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="background-mode">Background Animation</Label>
                 <select
@@ -348,17 +388,19 @@ export default function MatrixStormwave() {
                   onChange={(e) => {
                     setBackgroundMode(e.target.value as any);
                     // Set a random click effect when background changes
-                    const effects: Array<typeof clickEffect> = ['explosion', 'waterfall', 'crack', 'star', 'fizzle', 'matrix_rain', 'glitch', 'binary', 'cascade', 'square', 'diamond', 'cube', 'octahedron'];
-                    const randomEffect = effects[Math.floor(Math.random() * effects.length)];
-                    setClickEffect(randomEffect);
+                    setClickEffect(getRandomAllowedEffect(performanceMode) as any);
                   }}
                   className="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
                 >
                   <option value="matrix">Matrix Rain</option>
                   <option value="pulse">Pulse</option>
-                  <option value="sparkle">Sparkle</option>
+                  <option value="sparkle" disabled={!isBackgroundModeAllowed('sparkle', performanceMode)}>
+                    Sparkle {!isBackgroundModeAllowed('sparkle', performanceMode) && '(High/Medium only)'}
+                  </option>
                   <option value="waves">Waves</option>
-                  <option value="grid">Grid</option>
+                  <option value="grid" disabled={!isBackgroundModeAllowed('grid', performanceMode)}>
+                    Grid {!isBackgroundModeAllowed('grid', performanceMode) && '(High/Medium only)'}
+                  </option>
                 </select>
               </div>
               
@@ -375,15 +417,23 @@ export default function MatrixStormwave() {
                   <option value="waterfall">Waterfall</option>
                   <option value="crack">Crack</option>
                   <option value="star">Star</option>
-                  <option value="fizzle">Fizzle (Chaotic)</option>
+                  <option value="fizzle" disabled={!isEffectAllowed('fizzle', performanceMode)}>
+                    Fizzle (Chaotic) {!isEffectAllowed('fizzle', performanceMode) && '(High/Medium only)'}
+                  </option>
                   <option value="matrix_rain">Matrix Rain</option>
-                  <option value="glitch">Glitch</option>
+                  <option value="glitch" disabled={!isEffectAllowed('glitch', performanceMode)}>
+                    Glitch {!isEffectAllowed('glitch', performanceMode) && '(High/Medium only)'}
+                  </option>
                   <option value="binary">Binary Storm</option>
                   <option value="cascade">Cascade</option>
                   <option value="square">Square</option>
                   <option value="diamond">Diamond</option>
-                  <option value="cube">3D Cube</option>
-                  <option value="octahedron">Octahedron</option>
+                  <option value="cube" disabled={!isEffectAllowed('cube', performanceMode)}>
+                    3D Cube {!isEffectAllowed('cube', performanceMode) && '(High/Medium only)'}
+                  </option>
+                  <option value="octahedron" disabled={!isEffectAllowed('octahedron', performanceMode)}>
+                    Octahedron {!isEffectAllowed('octahedron', performanceMode) && '(High/Medium only)'}
+                  </option>
                 </select>
               </div>
               
@@ -415,8 +465,8 @@ export default function MatrixStormwave() {
                 <Label htmlFor="particle-count">Particle Count: {Math.round(particleCount * 20)}</Label>
                 <Slider
                   id="particle-count"
-                  min={0.5}
-                  max={3}
+                  min={PERFORMANCE_PRESETS[performanceMode].particleCount.min}
+                  max={PERFORMANCE_PRESETS[performanceMode].particleCount.max}
                   step={0.1}
                   value={[particleCount]}
                   onValueChange={(value) => setParticleCount(value[0])}
@@ -427,8 +477,8 @@ export default function MatrixStormwave() {
                 <Label htmlFor="particle-lifetime">Particle Lifetime: {(particleLifetime * 2).toFixed(1)}s</Label>
                 <Slider
                   id="particle-lifetime"
-                  min={0.2}
-                  max={30}
+                  min={PERFORMANCE_PRESETS[performanceMode].particleLifetime.min}
+                  max={PERFORMANCE_PRESETS[performanceMode].particleLifetime.max}
                   step={0.2}
                   value={[particleLifetime]}
                   onValueChange={(value) => setParticleLifetime(value[0])}
@@ -463,8 +513,8 @@ export default function MatrixStormwave() {
                 <Label htmlFor="ripple-particle-limit">Ripple Particle Limit: {rippleParticleLimit}</Label>
                 <Slider
                   id="ripple-particle-limit"
-                  min={1}
-                  max={50}
+                  min={PERFORMANCE_PRESETS[performanceMode].rippleParticleLimit.min}
+                  max={PERFORMANCE_PRESETS[performanceMode].rippleParticleLimit.max}
                   step={1}
                   value={[rippleParticleLimit]}
                   onValueChange={(value) => setRippleParticleLimit(value[0])}
@@ -487,8 +537,8 @@ export default function MatrixStormwave() {
                 <Label htmlFor="ripple-max-count">Max Simultaneous Ripples: {rippleMaxCount}</Label>
                 <Slider
                   id="ripple-max-count"
-                  min={5}
-                  max={200}
+                  min={PERFORMANCE_PRESETS[performanceMode].rippleMaxCount.min}
+                  max={PERFORMANCE_PRESETS[performanceMode].rippleMaxCount.max}
                   step={5}
                   value={[rippleMaxCount]}
                   onValueChange={(value) => setRippleMaxCount(value[0])}
