@@ -294,6 +294,7 @@ export default function MatrixStormwave() {
         rippleMaxCount={rippleMaxCount}
         enableTrails={enableTrails}
         enableMouseRipples={enableMouseRipples}
+        performanceMode={performanceMode}
         soundEffectManager={soundEffectManagerRef.current}
         onParticleCountChange={handleParticleCountChange}
       />
@@ -394,13 +395,9 @@ export default function MatrixStormwave() {
                 >
                   <option value="matrix">Matrix Rain</option>
                   <option value="pulse">Pulse</option>
-                  <option value="sparkle" disabled={!isBackgroundModeAllowed('sparkle', performanceMode)}>
-                    Sparkle {!isBackgroundModeAllowed('sparkle', performanceMode) && '(High/Medium only)'}
-                  </option>
+                  <option value="sparkle">Sparkle</option>
                   <option value="waves">Waves</option>
-                  <option value="grid" disabled={!isBackgroundModeAllowed('grid', performanceMode)}>
-                    Grid {!isBackgroundModeAllowed('grid', performanceMode) && '(High/Medium only)'}
-                  </option>
+                  <option value="grid">Grid</option>
                 </select>
               </div>
               

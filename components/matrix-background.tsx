@@ -22,6 +22,7 @@ interface MatrixBackgroundProps {
   rippleMaxCount?: number;
   enableTrails?: boolean;
   enableMouseRipples?: boolean;
+  performanceMode?: 'high' | 'medium' | 'low';
   soundEffectManager?: SoundEffectManager;
   onParticleCountChange?: (count: { total: number; particles: number; background: number; ripples: number; shapes: number }) => void;
 }
@@ -64,6 +65,7 @@ const MatrixBackground: React.FC<MatrixBackgroundProps> = ({
   rippleMaxCount = 50,
   enableTrails = true,
   enableMouseRipples = true,
+  performanceMode = 'high',
   soundEffectManager,
   onParticleCountChange
 }) => {
@@ -484,9 +486,12 @@ const MatrixBackground: React.FC<MatrixBackgroundProps> = ({
 
         case 'pulse':
           // Pulsing with grid letters
+          // Performance optimization: skip cells based on mode
+          const cellSkip = performanceMode === 'low' ? 3 : performanceMode === 'medium' ? 2 : 1;
+
           ctx.font = `${fontSize}px arial`;
-          for (let x = 0; x < columns; x++) {
-            for (let y = 0; y < rows; y++) {
+          for (let x = 0; x < columns; x += cellSkip) {
+            for (let y = 0; y < rows; y += cellSkip) {
               const distance = Math.sqrt(Math.pow(x - columns/2, 2) + Math.pow(y - rows/2, 2));
               const offset = Math.sin(backgroundTimeRef.current - distance * 0.1);
               if (offset > 0.7) {
@@ -530,9 +535,13 @@ const MatrixBackground: React.FC<MatrixBackgroundProps> = ({
 
         case 'waves':
           // Wave pattern with persistent letters - use backgroundColor
+          // Performance optimization: skip rows based on mode
+          const rowSkip = performanceMode === 'low' ? 3 : performanceMode === 'medium' ? 2 : 1;
+          const colSkip = performanceMode === 'low' ? 2 : 1;
+
           ctx.font = `${fontSize}px arial`;
-          for (let y = 0; y < rows; y++) {
-            for (let x = 0; x < columns; x++) {
+          for (let y = 0; y < rows; y += rowSkip) {
+            for (let x = 0; x < columns; x += colSkip) {
               const waveOffset = Math.sin(backgroundTimeRef.current + x * 0.2) * 2;
               const waveY = y + waveOffset;
               // Always render letters, just fade their intensity smoothly
@@ -1207,7 +1216,7 @@ const MatrixBackground: React.FC<MatrixBackgroundProps> = ({
       }
       window.removeEventListener('resize', handleResize);
     };
-  }, [theme, isAnimationPaused, clickEffect, particleSpeed, particleCount, particleColor, particleLifetime, backgroundMode, backgroundSpeed, backgroundColor, rippleIntensity, rippleCharacter, rippleParticleLimit, rippleFadeSpeed, rippleFadeFromCenter, rippleMaxCount, enableTrails, enableMouseRipples]); // Add all dependencies
+  }, [theme, isAnimationPaused, clickEffect, particleSpeed, particleCount, particleColor, particleLifetime, backgroundMode, backgroundSpeed, backgroundColor, rippleIntensity, rippleCharacter, rippleParticleLimit, rippleFadeSpeed, rippleFadeFromCenter, rippleMaxCount, enableTrails, enableMouseRipples, performanceMode]); // Add all dependencies
 
   return <canvas ref={canvasRef} className="fixed top-0 left-0 w-full h-full z-0 pointer-events-none" />;
 };

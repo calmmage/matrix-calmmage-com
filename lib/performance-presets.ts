@@ -51,7 +51,7 @@ export const PERFORMANCE_PRESETS: Record<PerformanceMode, PerformancePreset> = {
     particleLifetime: { min: 0.2, max: 5 },
     rippleParticleLimit: { min: 1, max: 8 },
     rippleMaxCount: { min: 5, max: 25 },
-    allowedBackgroundModes: ['matrix', 'sparkle', 'grid'], // Exclude pulse and waves (most intensive)
+    allowedBackgroundModes: ['matrix', 'pulse', 'sparkle', 'waves', 'grid'], // All modes available, but optimized
     allowed3DShapes: false, // No 3D shapes in low mode
     allowedEffects: ['explosion', 'waterfall', 'crack', 'star', 'matrix_rain', 'binary', 'cascade', 'square', 'diamond', 'random'] // No fizzle, glitch, cube, octahedron
   }
