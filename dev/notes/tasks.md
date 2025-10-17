@@ -1,0 +1,24 @@
+- a
+    - `key: 3c44129c`
+    - Troubleshoot TV settings being ugly and not displaying sliders correctly
+- b
+    - `key: a8aa27fc`
+    - Auto-detect tv / mobile and activate low performance mode by default
+    - Consider implementing more complex logic
+        - Based on FPS?
+        - Downgrade if FPS is 1?
+    - Determine activation timing
+        - Only 10 seconds on start?
+        - Or always?
+- c
+    - `key: 90f9d643`
+    - add a 'low performance' or something like that settings
+        - limit our most-performance heavy settings
+        - some way to cap the performance hit
+    - do we optimize anything
+    - have 3 modes of settings
+        - high medium and low
+        - the 'random' button to still work
+    - for high
+        - don't want any changes or optimizations that could change the quality
+## Done
