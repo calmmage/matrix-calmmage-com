@@ -1,17 +1,17 @@
 "use client"
 
 import { useState } from "react"
-import { BACKGROUND_PRESETS } from "@/lib/background-presets"
+import { BACKGROUNDS } from "@/lib/backgrounds"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react"
 import Link from "next/link"
 
 export default function GalleryPage() {
-  const [selectedPresetId, setSelectedPresetId] = useState(BACKGROUND_PRESETS[0].id)
+  const [selectedBackgroundId, setSelectedBackgroundId] = useState(BACKGROUNDS[0].id)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
 
-  const selectedPreset = BACKGROUND_PRESETS.find(p => p.id === selectedPresetId)
+  const selectedBackground = BACKGROUNDS.find(bg => bg.id === selectedBackgroundId)
 
   return (
     <div className="h-screen flex overflow-hidden">
@@ -24,7 +24,7 @@ export default function GalleryPage() {
         {/* Sidebar Header */}
         <div className="p-4 border-b flex items-center justify-between">
           {!isSidebarCollapsed && (
-            <h1 className="text-xl font-bold">Matrix Gallery</h1>
+            <h1 className="text-xl font-bold">Backgrounds</h1>
           )}
           <Button
             variant="ghost"
@@ -40,28 +40,32 @@ export default function GalleryPage() {
           </Button>
         </div>
 
-        {/* Preset List */}
+        {/* Background List */}
         {!isSidebarCollapsed && (
-          <ScrollArea className="flex-1">
+          <div className="flex-1 overflow-y-auto">
             <div className="p-2 space-y-1">
-              {BACKGROUND_PRESETS.map((preset) => (
+              {BACKGROUNDS.map((bg) => (
                 <button
-                  key={preset.id}
-                  onClick={() => setSelectedPresetId(preset.id)}
+                  key={bg.id}
+                  onClick={() => setSelectedBackgroundId(bg.id)}
                   className={`w-full text-left p-3 rounded-lg transition-colors ${
-                    selectedPresetId === preset.id
+                    selectedBackgroundId === bg.id
                       ? 'bg-primary text-primary-foreground'
                       : 'hover:bg-muted'
                   }`}
                 >
-                  <div className="font-semibold text-sm">{preset.name}</div>
+                  <div className="font-semibold text-sm">{bg.name}</div>
                   <div className="text-xs opacity-80 mt-1 line-clamp-2">
-                    {preset.description}
+                    {bg.description}
                   </div>
+                  <div
+                    className="w-4 h-4 rounded-full mt-2"
+                    style={{ backgroundColor: bg.color }}
+                  />
                 </button>
               ))}
             </div>
-          </ScrollArea>
+          </div>
         )}
 
         {/* Sidebar Footer */}
@@ -72,9 +76,9 @@ export default function GalleryPage() {
                 Back to Editor
               </Button>
             </Link>
-            {selectedPreset && (
+            {selectedBackground && (
               <Link
-                href={`/preset/${selectedPreset.id}`}
+                href={`/${selectedBackground.id}`}
                 target="_blank"
                 className="block"
               >
@@ -90,22 +94,13 @@ export default function GalleryPage() {
 
       {/* Main Content Area - Iframe */}
       <div className="flex-1 relative">
-        {selectedPreset && (
-          <>
-            {/* Preset Info Overlay */}
-            <div className="absolute top-4 left-4 right-4 z-10 bg-background/80 backdrop-blur-sm rounded-lg p-4 shadow-lg">
-              <h2 className="text-2xl font-bold">{selectedPreset.name}</h2>
-              <p className="text-muted-foreground mt-1">{selectedPreset.description}</p>
-            </div>
-
-            {/* Iframe showing the preset */}
-            <iframe
-              key={selectedPreset.id}
-              src={`/preset/${selectedPreset.id}`}
-              className="w-full h-full border-0"
-              title={selectedPreset.name}
-            />
-          </>
+        {selectedBackground && (
+          <iframe
+            key={selectedBackground.id}
+            src={`/${selectedBackground.id}`}
+            className="w-full h-full border-0"
+            title={selectedBackground.name}
+          />
         )}
       </div>
     </div>

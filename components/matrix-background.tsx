@@ -11,7 +11,7 @@ interface MatrixBackgroundProps {
   particleCount?: number;
   particleColor?: string;
   particleLifetime?: number;
-  backgroundMode?: 'matrix' | 'pulse' | 'sparkle' | 'waves' | 'grid';
+  backgroundMode?: 'matrix' | 'pulse' | 'sparkle' | 'waves' | 'grid' | 'spiral' | 'rain' | 'snow' | 'fireflies' | 'nebula';
   backgroundSpeed?: number;
   backgroundColor?: string;
   rippleIntensity?: number;
@@ -563,6 +563,128 @@ const MatrixBackground: React.FC<MatrixBackgroundProps> = ({
               const pulse = Math.sin(backgroundTimeRef.current * 2 + x * 0.5 + y * 0.5);
               if (pulse > 0.5) {
                 ctx.fillStyle = `rgba(${bgRgb.r}, ${bgRgb.g}, ${bgRgb.b}, ${pulse * 0.3})`;
+                ctx.fillText(gridLetters[x][y], x * fontSize, y * fontSize);
+              }
+            }
+          }
+          break;
+
+        case 'spiral':
+          // Spiral pattern emanating from center
+          ctx.font = `${fontSize}px arial`;
+          const spiralCenterX = columns / 2;
+          const spiralCenterY = rows / 2;
+
+          for (let x = 0; x < columns; x++) {
+            for (let y = 0; y < rows; y++) {
+              const dx = x - spiralCenterX;
+              const dy = y - spiralCenterY;
+              const dist = Math.sqrt(dx * dx + dy * dy);
+              const angle = Math.atan2(dy, dx);
+
+              const spiralPhase = angle + dist * 0.2 - backgroundTimeRef.current * backgroundSpeed;
+              const intensity = (Math.sin(spiralPhase) + 1) / 2;
+
+              if (intensity > 0.3) {
+                ctx.fillStyle = `rgba(${bgRgb.r}, ${bgRgb.g}, ${bgRgb.b}, ${intensity * 0.7})`;
+                ctx.fillText(gridLetters[x][y], x * fontSize, y * fontSize);
+              }
+            }
+          }
+          break;
+
+        case 'rain':
+          // Diagonal rain effect
+          ctx.font = `${fontSize}px arial`;
+          const rainSpeed = backgroundSpeed * 2;
+
+          for (let i = 0; i < columns * 2; i += 4) {
+            const offset = (backgroundTimeRef.current * rainSpeed * 10) % (rows + 20);
+            for (let j = 0; j < 8; j++) {
+              const x = i - j * 2;
+              const y = Math.floor(offset + j * 3);
+
+              if (x >= 0 && x < columns && y >= 0 && y < rows) {
+                const fade = 1 - (j / 8);
+                ctx.fillStyle = `rgba(${bgRgb.r}, ${bgRgb.g}, ${bgRgb.b}, ${fade * 0.6})`;
+                ctx.fillText(gridLetters[Math.floor(x)][y], x * fontSize, y * fontSize);
+              }
+            }
+          }
+          break;
+
+        case 'snow':
+          // Falling snow effect
+          ctx.font = `${fontSize}px arial`;
+          const snowSpeed = backgroundSpeed * 0.5;
+
+          for (let i = 0; i < 80; i++) {
+            const seed = i * 97;
+            const baseX = (seed * 131) % columns;
+            const fallOffset = (backgroundTimeRef.current * snowSpeed * 5 + i * 7) % (rows + 10);
+            const sway = Math.sin(backgroundTimeRef.current * snowSpeed + i) * 3;
+            const x = Math.floor(baseX + sway);
+            const y = Math.floor(fallOffset);
+
+            if (x >= 0 && x < columns && y >= 0 && y < rows) {
+              const alpha = Math.min(1, (rows - y) / rows) * 0.7;
+              ctx.fillStyle = `rgba(${bgRgb.r}, ${bgRgb.g}, ${bgRgb.b}, ${alpha})`;
+              ctx.fillText('*', x * fontSize, y * fontSize);
+            }
+          }
+          break;
+
+        case 'fireflies':
+          // Floating fireflies with trails
+          ctx.font = `${fontSize}px arial`;
+          const fireflyCount = 50;
+
+          for (let i = 0; i < fireflyCount; i++) {
+            const t = backgroundTimeRef.current * backgroundSpeed + i * 13;
+            const x = columns / 2 + Math.sin(t * 0.3 + i * 7) * (columns / 3);
+            const y = rows / 2 + Math.cos(t * 0.4 + i * 11) * (rows / 3);
+            const gridX = Math.floor(x);
+            const gridY = Math.floor(y);
+
+            if (gridX >= 0 && gridX < columns && gridY >= 0 && gridY < rows) {
+              const glow = (Math.sin(t * 3) + 1) / 2;
+              ctx.shadowBlur = 15 * glow;
+              ctx.shadowColor = backgroundColor;
+              ctx.fillStyle = `rgba(${bgRgb.r}, ${bgRgb.g}, ${bgRgb.b}, ${glow * 0.9})`;
+              ctx.fillText('o', gridX * fontSize, gridY * fontSize);
+              ctx.shadowBlur = 0;
+
+              // Trail
+              for (let j = 1; j <= 3; j++) {
+                const trailT = t - j * 0.1;
+                const trailX = Math.floor(columns / 2 + Math.sin(trailT * 0.3 + i * 7) * (columns / 3));
+                const trailY = Math.floor(rows / 2 + Math.cos(trailT * 0.4 + i * 11) * (rows / 3));
+
+                if (trailX >= 0 && trailX < columns && trailY >= 0 && trailY < rows) {
+                  ctx.fillStyle = `rgba(${bgRgb.r}, ${bgRgb.g}, ${bgRgb.b}, ${(1 - j/3) * glow * 0.3})`;
+                  ctx.fillText('.', trailX * fontSize, trailY * fontSize);
+                }
+              }
+            }
+          }
+          break;
+
+        case 'nebula':
+          // Swirling nebula clouds
+          ctx.font = `${fontSize}px arial`;
+
+          for (let x = 0; x < columns; x += 2) {
+            for (let y = 0; y < rows; y += 2) {
+              const noise1 = Math.sin(x * 0.1 + backgroundTimeRef.current * 0.5) * Math.cos(y * 0.1);
+              const noise2 = Math.sin(y * 0.15 + backgroundTimeRef.current * 0.3) * Math.cos(x * 0.15);
+              const combined = (noise1 + noise2) / 2;
+
+              if (combined > -0.2) {
+                const intensity = (combined + 0.2) / 1.2;
+                const layers = Math.sin(backgroundTimeRef.current + x * 0.2 + y * 0.2);
+                const alpha = intensity * 0.4 + (layers + 1) * 0.1;
+
+                ctx.fillStyle = `rgba(${bgRgb.r}, ${bgRgb.g}, ${bgRgb.b}, ${alpha})`;
                 ctx.fillText(gridLetters[x][y], x * fontSize, y * fontSize);
               }
             }
