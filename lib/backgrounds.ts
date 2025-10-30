@@ -9,10 +9,10 @@ export type BackgroundMode =
   | 'waves'
   | 'grid'
   | 'spiral'
-  | 'rain'
-  | 'snow'
   | 'fireflies'
   | 'nebula'
+  | 'orbit'
+  | 'sphere'
 
 export type BackgroundInfo = {
   id: BackgroundMode
@@ -59,18 +59,6 @@ export const BACKGROUNDS: BackgroundInfo[] = [
     color: '#FF4500'
   },
   {
-    id: 'rain',
-    name: 'Rain',
-    description: 'Diagonal rain streaks falling across the screen',
-    color: '#1DD11D'
-  },
-  {
-    id: 'snow',
-    name: 'Snow',
-    description: 'Gentle snowflakes falling with realistic sway',
-    color: '#00FFFF'
-  },
-  {
     id: 'fireflies',
     name: 'Fireflies',
     description: 'Glowing fireflies floating with ethereal trails',
@@ -81,6 +69,18 @@ export const BACKGROUNDS: BackgroundInfo[] = [
     name: 'Nebula',
     description: 'Swirling cosmic clouds with layered depth',
     color: '#9932CC'
+  },
+  {
+    id: 'orbit',
+    name: 'Orbit',
+    description: 'Rotating 3D sphere of particles like a cosmic disco ball',
+    color: '#00CED1'
+  },
+  {
+    id: 'sphere',
+    name: 'Sphere',
+    description: 'Simple rotating sphere with constant steady motion',
+    color: '#FF69B4'
   }
 ]
 

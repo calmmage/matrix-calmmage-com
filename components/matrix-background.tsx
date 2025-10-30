@@ -11,7 +11,7 @@ interface MatrixBackgroundProps {
   particleCount?: number;
   particleColor?: string;
   particleLifetime?: number;
-  backgroundMode?: 'matrix' | 'pulse' | 'sparkle' | 'waves' | 'grid' | 'spiral' | 'rain' | 'snow' | 'fireflies' | 'nebula';
+  backgroundMode?: 'matrix' | 'pulse' | 'sparkle' | 'waves' | 'grid' | 'spiral' | 'fireflies' | 'nebula' | 'orbit' | 'sphere';
   backgroundSpeed?: number;
   backgroundColor?: string;
   rippleIntensity?: number;
@@ -78,6 +78,7 @@ const MatrixBackground: React.FC<MatrixBackgroundProps> = ({
   const shape3DRef = useRef<{points: Shape3DPoint[]; rotation: {x: number; y: number; z: number}; center: {x: number; y: number}; life?: number; maxLife?: number}[]>([]);
   const ripplesRef = useRef<{x: number; y: number; radius: number; maxRadius: number; life: number; maxLife: number}[]>([]);
   const lastMousePosRef = useRef<{x: number; y: number; time: number} | null>(null);
+  const sphereCharRef = useRef<string>(''); // Store random character for sphere mode
 
   // Store particle creation functions so event handlers can access them
   const particleCreatorsRef = useRef<{
@@ -593,47 +594,6 @@ const MatrixBackground: React.FC<MatrixBackgroundProps> = ({
           }
           break;
 
-        case 'rain':
-          // Diagonal rain effect
-          ctx.font = `${fontSize}px arial`;
-          const rainSpeed = backgroundSpeed * 2;
-
-          for (let i = 0; i < columns * 2; i += 4) {
-            const offset = (backgroundTimeRef.current * rainSpeed * 10) % (rows + 20);
-            for (let j = 0; j < 8; j++) {
-              const x = i - j * 2;
-              const y = Math.floor(offset + j * 3);
-
-              if (x >= 0 && x < columns && y >= 0 && y < rows) {
-                const fade = 1 - (j / 8);
-                ctx.fillStyle = `rgba(${bgRgb.r}, ${bgRgb.g}, ${bgRgb.b}, ${fade * 0.6})`;
-                ctx.fillText(gridLetters[Math.floor(x)][y], x * fontSize, y * fontSize);
-              }
-            }
-          }
-          break;
-
-        case 'snow':
-          // Falling snow effect
-          ctx.font = `${fontSize}px arial`;
-          const snowSpeed = backgroundSpeed * 0.5;
-
-          for (let i = 0; i < 80; i++) {
-            const seed = i * 97;
-            const baseX = (seed * 131) % columns;
-            const fallOffset = (backgroundTimeRef.current * snowSpeed * 5 + i * 7) % (rows + 10);
-            const sway = Math.sin(backgroundTimeRef.current * snowSpeed + i) * 3;
-            const x = Math.floor(baseX + sway);
-            const y = Math.floor(fallOffset);
-
-            if (x >= 0 && x < columns && y >= 0 && y < rows) {
-              const alpha = Math.min(1, (rows - y) / rows) * 0.7;
-              ctx.fillStyle = `rgba(${bgRgb.r}, ${bgRgb.g}, ${bgRgb.b}, ${alpha})`;
-              ctx.fillText('*', x * fontSize, y * fontSize);
-            }
-          }
-          break;
-
         case 'fireflies':
           // Beautiful floating fireflies with Lissajous curves
           ctx.font = `${fontSize}px arial`;
@@ -701,25 +661,259 @@ const MatrixBackground: React.FC<MatrixBackgroundProps> = ({
           break;
 
         case 'nebula':
-          // Swirling nebula clouds
+          // Swirling nebula clouds with proper depth layers
           ctx.font = `${fontSize}px arial`;
 
-          for (let x = 0; x < columns; x += 2) {
-            for (let y = 0; y < rows; y += 2) {
-              const noise1 = Math.sin(x * 0.1 + backgroundTimeRef.current * 0.5) * Math.cos(y * 0.1);
-              const noise2 = Math.sin(y * 0.15 + backgroundTimeRef.current * 0.3) * Math.cos(x * 0.15);
-              const combined = (noise1 + noise2) / 2;
+          // Define 4 distinct depth layers
+          const layers = [
+            { speed: 0.15, scale: 0.05, alphaBase: 0.15, skip: 3 },  // Furthest back - slow, small, faint
+            { speed: 0.25, scale: 0.08, alphaBase: 0.25, skip: 2 },  // Mid-distant
+            { speed: 0.4, scale: 0.12, alphaBase: 0.35, skip: 2 },   // Closer
+            { speed: 0.6, scale: 0.18, alphaBase: 0.45, skip: 1 }    // Foreground - fast, large, bright
+          ];
 
-              if (combined > -0.2) {
-                const intensity = (combined + 0.2) / 1.2;
-                const layers = Math.sin(backgroundTimeRef.current + x * 0.2 + y * 0.2);
-                const alpha = intensity * 0.4 + (layers + 1) * 0.1;
+          layers.forEach((layer, layerIndex) => {
+            const layerTime = backgroundTimeRef.current * backgroundSpeed * layer.speed;
 
-                ctx.fillStyle = `rgba(${bgRgb.r}, ${bgRgb.g}, ${bgRgb.b}, ${alpha})`;
-                ctx.fillText(gridLetters[x][y], x * fontSize, y * fontSize);
+            for (let x = 0; x < columns; x += layer.skip) {
+              for (let y = 0; y < rows; y += layer.skip) {
+                // Create swirling patterns using multiple octaves of noise
+                const angle1 = Math.atan2(y - rows / 2, x - columns / 2);
+                const dist1 = Math.sqrt(Math.pow(x - columns / 2, 2) + Math.pow(y - rows / 2, 2));
+
+                // Primary swirl
+                const swirl1 = Math.sin(angle1 * 2 + dist1 * layer.scale + layerTime) *
+                               Math.cos(angle1 - layerTime * 0.3);
+
+                // Secondary turbulence
+                const swirl2 = Math.sin(x * layer.scale * 1.5 + layerTime * 1.2) *
+                               Math.cos(y * layer.scale * 1.5 - layerTime * 0.8);
+
+                // Tertiary detail layer
+                const detail = Math.sin(dist1 * layer.scale * 2 + layerTime * 0.5) *
+                               Math.cos(angle1 * 3 + layerTime);
+
+                // Combine noise patterns
+                const combined = (swirl1 * 0.5 + swirl2 * 0.3 + detail * 0.2);
+
+                // Create flowing clouds with varying density
+                if (combined > -0.1) {
+                  const intensity = (combined + 0.1) / 1.1;
+
+                  // Add depth-based brightness variation
+                  const depthPulse = (Math.sin(layerTime * 0.7 + x * 0.1 + y * 0.1) + 1) * 0.2;
+                  const alpha = Math.min(0.8, intensity * layer.alphaBase + depthPulse);
+
+                  // Slightly vary character sizes based on layer depth
+                  const sizeMultiplier = 0.8 + (layerIndex * 0.1);
+                  if (sizeMultiplier !== 1) {
+                    ctx.save();
+                    ctx.font = `${fontSize * sizeMultiplier}px arial`;
+                  }
+
+                  // Add subtle color variation based on layer depth
+                  const colorShift = 1 - layerIndex * 0.15;
+                  const r = Math.floor(bgRgb.r * colorShift);
+                  const g = Math.floor(bgRgb.g * colorShift);
+                  const b = Math.floor(bgRgb.b * colorShift);
+
+                  ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+                  ctx.fillText(gridLetters[x][y], x * fontSize, y * fontSize);
+
+                  if (sizeMultiplier !== 1) {
+                    ctx.restore();
+                  }
+                }
               }
             }
+          });
+          break;
+
+        case 'orbit':
+          // Rotating 3D sphere like a disco ball
+          ctx.font = `${fontSize}px arial`;
+
+          // Sphere parameters
+          const sphereCenterX = canvas.width / 2;
+          const sphereCenterY = canvas.height / 2;
+          const sphereRadius = Math.min(canvas.width, canvas.height) * 0.4;
+
+          // Rotation angles
+          const rotationY = backgroundTimeRef.current * backgroundSpeed * 0.5; // Spin around Y axis
+          const rotationX = backgroundTimeRef.current * backgroundSpeed * 0.2; // Tilt around X axis
+
+          // Create latitude/longitude grid on sphere
+          const latitudeSteps = 20;
+          const longitudeSteps = 40;
+
+          const particles3D = [];
+
+          for (let lat = 0; lat <= latitudeSteps; lat++) {
+            const theta = (lat / latitudeSteps) * Math.PI; // 0 to PI
+
+            for (let lon = 0; lon < longitudeSteps; lon++) {
+              const phi = (lon / longitudeSteps) * Math.PI * 2; // 0 to 2PI
+
+              // Spherical to Cartesian coordinates
+              let x = sphereRadius * Math.sin(theta) * Math.cos(phi);
+              let y = sphereRadius * Math.cos(theta);
+              let z = sphereRadius * Math.sin(theta) * Math.sin(phi);
+
+              // Apply rotation around Y axis (spin)
+              const rotatedX = x * Math.cos(rotationY) + z * Math.sin(rotationY);
+              const rotatedZ = -x * Math.sin(rotationY) + z * Math.cos(rotationY);
+              x = rotatedX;
+              z = rotatedZ;
+
+              // Apply rotation around X axis (tilt)
+              const rotatedY = y * Math.cos(rotationX) - z * Math.sin(rotationX);
+              const rotatedZ2 = y * Math.sin(rotationX) + z * Math.cos(rotationX);
+              y = rotatedY;
+              z = rotatedZ2;
+
+              particles3D.push({ x, y, z, lat, lon });
+            }
           }
+
+          // Sort by Z depth (back to front)
+          particles3D.sort((a, b) => a.z - b.z);
+
+          // Render particles
+          particles3D.forEach(p => {
+            // Perspective projection
+            const perspective = 1000;
+            const scale = perspective / (perspective + p.z);
+            const screenX = sphereCenterX + p.x * scale;
+            const screenY = sphereCenterY + p.y * scale;
+
+            // Depth-based brightness (particles further away are dimmer)
+            const depthFactor = (p.z + sphereRadius) / (sphereRadius * 2); // 0 to 1
+            const baseBrightness = 0.2 + depthFactor * 0.6; // 0.2 to 0.8
+
+            // Individual sparkle effect
+            const sparklePhase = p.lat * 0.5 + p.lon * 0.3;
+            const sparkle = (Math.sin(backgroundTimeRef.current * 3 + sparklePhase) + 1) / 2;
+            const sparkleBoost = sparkle * 0.3;
+
+            const alpha = Math.min(0.9, baseBrightness + sparkleBoost);
+
+            // Size variation based on depth
+            const sizeMultiplier = 0.6 + depthFactor * 0.6; // 0.6 to 1.2
+
+            // Convert screen position to grid coordinates
+            const gridX = Math.floor(screenX / fontSize);
+            const gridY = Math.floor(screenY / fontSize);
+
+            if (gridX >= 0 && gridX < columns && gridY >= 0 && gridY < rows && alpha > 0.1) {
+              if (sizeMultiplier !== 1) {
+                ctx.save();
+                ctx.font = `${fontSize * sizeMultiplier}px arial`;
+              }
+
+              // Add slight glow to brighter particles
+              if (alpha > 0.7) {
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = backgroundColor;
+              }
+
+              ctx.fillStyle = `rgba(${bgRgb.r}, ${bgRgb.g}, ${bgRgb.b}, ${alpha})`;
+              ctx.fillText(gridLetters[gridX][gridY], gridX * fontSize, gridY * fontSize);
+
+              ctx.shadowBlur = 0;
+
+              if (sizeMultiplier !== 1) {
+                ctx.restore();
+              }
+            }
+          });
+          break;
+
+        case 'sphere':
+          // Simple rotating sphere - clean and minimal
+          ctx.font = `${fontSize}px arial`;
+
+          // Bigger sphere - 60% of screen
+          const bigSphereRadius = Math.min(canvas.width, canvas.height) * 0.6;
+          const bigSphereCenterX = canvas.width / 2;
+          const bigSphereCenterY = canvas.height / 2;
+
+          // Much slower rotation and axis drift
+          const axisDrift = backgroundTimeRef.current * 0.005; // 10x slower drift
+          const rotationAxisX = Math.sin(axisDrift) * 0.3;
+          const rotationAxisY = Math.cos(axisDrift) * 0.3 + 0.7; // Mostly Y axis
+          const rotationAxisZ = Math.sin(axisDrift * 1.3) * 0.2;
+
+          // Much slower constant rotation speed
+          const simpleRotation = backgroundTimeRef.current * backgroundSpeed * 0.08; // ~12x slower
+
+          // Create chaotic particle cloud with radius variation
+          const simpleLat = 25;
+          const simpleLon = 50;
+          const simpleParticles = [];
+
+          for (let lat = 0; lat <= simpleLat; lat++) {
+            const theta = (lat / simpleLat) * Math.PI;
+
+            for (let lon = 0; lon < simpleLon; lon++) {
+              const phi = (lon / simpleLon) * Math.PI * 2;
+
+              // Add small chaotic offset to angles for subtle non-uniform distribution
+              const chaosSeed = lat * 1000 + lon; // Deterministic chaos per particle
+              const chaosTheta = theta + (Math.sin(chaosSeed * 0.1) * 0.08); // Much smaller angle offset
+              const chaosPhi = phi + (Math.cos(chaosSeed * 0.13) * 0.1); // Much smaller angle offset
+
+              // Vary radius per particle - 90% to 110% of base radius (subtle variation)
+              const radiusVariation = 0.9 + (Math.sin(chaosSeed * 0.17) * 0.5 + 0.5) * 0.2;
+              const particleRadius = bigSphereRadius * radiusVariation;
+
+              // Spherical to Cartesian with chaos
+              let x = particleRadius * Math.sin(chaosTheta) * Math.cos(chaosPhi);
+              let y = particleRadius * Math.cos(chaosTheta);
+              let z = particleRadius * Math.sin(chaosTheta) * Math.sin(chaosPhi);
+
+              // Simple rotation around drifting axis
+              const cosAngle = Math.cos(simpleRotation);
+              const sinAngle = Math.sin(simpleRotation);
+              const dot = rotationAxisX * x + rotationAxisY * y + rotationAxisZ * z;
+
+              const rotatedX = x * cosAngle + (rotationAxisY * z - rotationAxisZ * y) * sinAngle + rotationAxisX * dot * (1 - cosAngle);
+              const rotatedY = y * cosAngle + (rotationAxisZ * x - rotationAxisX * z) * sinAngle + rotationAxisY * dot * (1 - cosAngle);
+              const rotatedZ = z * cosAngle + (rotationAxisX * y - rotationAxisY * x) * sinAngle + rotationAxisZ * dot * (1 - cosAngle);
+
+              // Random character per particle
+              const charIndex = Math.floor((chaosSeed * 7919) % letters.length);
+
+              simpleParticles.push({
+                x: rotatedX,
+                y: rotatedY,
+                z: rotatedZ,
+                char: letters[charIndex]
+              });
+            }
+          }
+
+          // Sort by depth
+          simpleParticles.sort((a, b) => a.z - b.z);
+
+          // Render - no glow, no sparkle, just depth-based brightness
+          simpleParticles.forEach(p => {
+            const perspective = 1000;
+            const scale = perspective / (perspective + p.z);
+            const screenX = bigSphereCenterX + p.x * scale;
+            const screenY = bigSphereCenterY + p.y * scale;
+
+            // Simple depth-based alpha - no sparkle
+            const depthFactor = (p.z + bigSphereRadius) / (bigSphereRadius * 2);
+            const alpha = 0.3 + depthFactor * 0.6; // 0.3 to 0.9
+
+            const gridX = Math.floor(screenX / fontSize);
+            const gridY = Math.floor(screenY / fontSize);
+
+            if (gridX >= 0 && gridX < columns && gridY >= 0 && gridY < rows) {
+              ctx.fillStyle = `rgba(${bgRgb.r}, ${bgRgb.g}, ${bgRgb.b}, ${alpha})`;
+              ctx.fillText(p.char, gridX * fontSize, gridY * fontSize);
+            }
+          });
           break;
       }
     };
