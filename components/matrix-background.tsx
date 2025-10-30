@@ -635,34 +635,65 @@ const MatrixBackground: React.FC<MatrixBackgroundProps> = ({
           break;
 
         case 'fireflies':
-          // Floating fireflies with trails
+          // Beautiful floating fireflies with Lissajous curves
           ctx.font = `${fontSize}px arial`;
-          const fireflyCount = 50;
+          const fireflyCount = 40;
 
           for (let i = 0; i < fireflyCount; i++) {
-            const t = backgroundTimeRef.current * backgroundSpeed + i * 13;
-            const x = columns / 2 + Math.sin(t * 0.3 + i * 7) * (columns / 3);
-            const y = rows / 2 + Math.cos(t * 0.4 + i * 11) * (rows / 3);
+            // Each firefly gets unique frequency ratios for Lissajous curves
+            const freqX = 0.2 + (i % 5) * 0.1;
+            const freqY = 0.3 + (i % 3) * 0.15;
+            const phaseX = i * 1.3;
+            const phaseY = i * 2.1;
+
+            const t = backgroundTimeRef.current * backgroundSpeed * 0.5;
+
+            // Lissajous curve motion
+            const x = columns / 2 + Math.sin(t * freqX + phaseX) * (columns / 2.5);
+            const y = rows / 2 + Math.cos(t * freqY + phaseY) * (rows / 2.5);
+
             const gridX = Math.floor(x);
             const gridY = Math.floor(y);
 
             if (gridX >= 0 && gridX < columns && gridY >= 0 && gridY < rows) {
-              const glow = (Math.sin(t * 3) + 1) / 2;
-              ctx.shadowBlur = 15 * glow;
+              // Individual glow cycle for each firefly
+              const glowSpeed = 2 + (i % 4) * 0.5;
+              const glowPhase = i * 0.8;
+              const glow = (Math.sin(t * glowSpeed + glowPhase) + 1) / 2;
+              const pulseIntensity = Math.pow(glow, 2); // Square for more pronounced pulse
+
+              // Size variation
+              const sizeVariation = 0.8 + (i % 3) * 0.3;
+
+              // Main firefly with glow
+              ctx.shadowBlur = 20 * pulseIntensity * sizeVariation;
               ctx.shadowColor = backgroundColor;
-              ctx.fillStyle = `rgba(${bgRgb.r}, ${bgRgb.g}, ${bgRgb.b}, ${glow * 0.9})`;
-              ctx.fillText('o', gridX * fontSize, gridY * fontSize);
+              ctx.fillStyle = `rgba(${bgRgb.r}, ${bgRgb.g}, ${bgRgb.b}, ${pulseIntensity * 0.95})`;
+              ctx.fillText(gridLetters[gridX][gridY], gridX * fontSize, gridY * fontSize);
+
+              // Inner bright core
+              if (pulseIntensity > 0.6) {
+                ctx.shadowBlur = 30 * pulseIntensity;
+                ctx.fillStyle = `rgba(${Math.min(255, bgRgb.r * 1.5)}, ${Math.min(255, bgRgb.g * 1.5)}, ${Math.min(255, bgRgb.b * 1.5)}, ${(pulseIntensity - 0.6) * 2})`;
+                ctx.fillText('o', gridX * fontSize, gridY * fontSize);
+              }
+
               ctx.shadowBlur = 0;
 
-              // Trail
-              for (let j = 1; j <= 3; j++) {
-                const trailT = t - j * 0.1;
-                const trailX = Math.floor(columns / 2 + Math.sin(trailT * 0.3 + i * 7) * (columns / 3));
-                const trailY = Math.floor(rows / 2 + Math.cos(trailT * 0.4 + i * 11) * (rows / 3));
+              // Ethereal trail with 8 segments
+              const trailLength = 8;
+              for (let j = 1; j <= trailLength; j++) {
+                const trailT = t - j * 0.08;
+                const trailX = Math.floor(columns / 2 + Math.sin(trailT * freqX + phaseX) * (columns / 2.5));
+                const trailY = Math.floor(rows / 2 + Math.cos(trailT * freqY + phaseY) * (rows / 2.5));
 
                 if (trailX >= 0 && trailX < columns && trailY >= 0 && trailY < rows) {
-                  ctx.fillStyle = `rgba(${bgRgb.r}, ${bgRgb.g}, ${bgRgb.b}, ${(1 - j/3) * glow * 0.3})`;
-                  ctx.fillText('.', trailX * fontSize, trailY * fontSize);
+                  const trailFade = (1 - j / trailLength);
+                  const trailAlpha = trailFade * pulseIntensity * 0.4;
+
+                  ctx.fillStyle = `rgba(${bgRgb.r}, ${bgRgb.g}, ${bgRgb.b}, ${trailAlpha})`;
+                  const trailChar = j % 3 === 0 ? '.' : '·';
+                  ctx.fillText(trailChar, trailX * fontSize, trailY * fontSize);
                 }
               }
             }
