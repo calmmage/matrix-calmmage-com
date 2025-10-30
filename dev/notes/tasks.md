@@ -1,7 +1,13 @@
 - a
+    - `key: 74401aaf`
+    - `cue: I want to integrate this as a sub-frame into my art website, and showcase`
+    - Add sub-pages with custom settings for each individual background
+    - Side bar to switch between them
+    - Generate more different background ideas and implement them
+- b
     - `key: 3c44129c`
     - Troubleshoot TV settings being ugly and not displaying sliders correctly
-- b
+- c
     - `key: a8aa27fc`
     - Auto-detect tv / mobile and activate low performance mode by default
     - Consider implementing more complex logic
@@ -10,7 +16,7 @@
     - Determine activation timing
         - Only 10 seconds on start?
         - Or always?
-- c
+- d
     - `key: 90f9d643`
     - add a 'low performance' or something like that settings
         - limit our most-performance heavy settings
